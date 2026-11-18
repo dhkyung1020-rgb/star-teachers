@@ -1051,7 +1051,7 @@ const StarAvatar = (() => {
     teachers: [], posts: [], comments: [], loaded: false, loadErr: false,
     tab: "map", sel: { kind: "all" }, q: "", subject: "전체", type: "전체", sort: "new", view: "wall",
     openId: null, openStamp: 0, editingId: null, pending: [], editFiles: [], removeIds: new Set(),
-    code: store.get("star-code"), liked: new Set(store.json("star-liked", [])),
+    code: "open", /* 교사단 코드 없이 쓰는 버전 */ liked: new Set(store.json("star-liked", [])),
     mk: { cur: StarAvatar.normalize({}), picked: 0 },
   };
 
