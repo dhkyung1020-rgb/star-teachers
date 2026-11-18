@@ -161,12 +161,21 @@ body.on-cover { background: #060a1c; }
 .cv-tip { position: absolute; z-index: 5; transform: translate(-50%, -100%); pointer-events: none; white-space: nowrap; background: rgba(255,248,226,.97); color: #1B1A33; border-radius: 999px; padding: 6px 13px; font-size: 14px; font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,.35), 0 0 18px rgba(255,210,90,.35); }
 .cv-tip small { font-weight: 500; color: #6B6890; margin-left: 6px; font-size: 12.5px; }
 .cv-tip::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 10px; height: 10px; background: inherit; transform: translateX(-50%) rotate(45deg); border-radius: 2px; }
+.cover-count .dots { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.cover-count .dots i { width: 5px; height: 5px; border-radius: 50%; background: #FFD25A; display: block; opacity: .3; }
+.cv-node.pending .spark { opacity: .55; }
 .cover-note { margin: 2px 0 0; color: #8E9AC8; font-size: 13px; text-align: center; }
 @media (prefers-reduced-motion: no-preference) {
   .cv-lines { stroke-dashoffset: 1; animation: cv-draw 2.6s ease-out .2s forwards; }
   .cv-node .glow { animation: cv-twinkle 2.6s ease-in-out infinite; }
   .cv-node .spark { animation: cv-spark 2.6s ease-in-out infinite; }
   .enter { animation: cv-pulse 2.8s ease-in-out infinite; }
+  .cover-count .dots i { animation: cv-dot 1.2s ease-in-out infinite; }
+  .cover-count .dots i:nth-child(2) { animation-delay: .2s; }
+  .cover-count .dots i:nth-child(3) { animation-delay: .4s; }
+  .cv-node.appear { animation: cv-in .7s cubic-bezier(.2,.8,.3,1.3) both; transform-box: fill-box; transform-origin: center; }
+  @keyframes cv-dot { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+  @keyframes cv-in { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
   @keyframes cv-draw { to { stroke-dashoffset: 0; } }
   @keyframes cv-twinkle { 0%, 100% { opacity: .35; transform: scale(.82); } 50% { opacity: 1; transform: scale(1.12); } }
   @keyframes cv-spark { 0%, 100% { opacity: .55; transform: scale(.75) rotate(0deg); } 50% { opacity: 1; transform: scale(1.15) rotate(20deg); } }
@@ -916,7 +925,7 @@ const StarAvatar = (() => {
 
     const browC = o.hair === "none" ? dark(skin, .45) : dark(hairCol, .12);
     const bw = o.brows === "thick" ? 4.6 : 3.2;
-    const by = eyeY - 15 + (o.brows === "up" ? -3 : 0);
+    const by = eyeY - 15 + (o.brows === "up" ? -3 : 0) + (o.hat === "beanie" || o.hat === "cap" ? 3.5 : 0);
     let brows;
     if (o.brows === "worried") brows = `<path d="M${eyeL - 8} ${by + 1}Q${eyeL} ${by - 1} ${eyeL + 8} ${by - 4}" fill="none" stroke="${browC}" stroke-width="3.2" stroke-linecap="round"/><path d="M${eyeR + 8} ${by + 1}Q${eyeR} ${by - 1} ${eyeR - 8} ${by - 4}" fill="none" stroke="${browC}" stroke-width="3.2" stroke-linecap="round"/>`;
     else { const k = o.brows === "up" ? 1.6 : 1; brows = `<path d="M${eyeL - 8} ${by}Q${eyeL} ${by - 5 * k} ${eyeL + 8} ${by - 1}" fill="none" stroke="${browC}" stroke-width="${bw}" stroke-linecap="round"/><path d="M${eyeR - 8} ${by - 1}Q${eyeR} ${by - 5 * k} ${eyeR + 8} ${by}" fill="none" stroke="${browC}" stroke-width="${bw}" stroke-linecap="round"/>`; }
@@ -958,10 +967,44 @@ const StarAvatar = (() => {
     /* ---- 모자/핀 ---- */
     let hat = "";
     const HT = `url(#${p}ht)`;
-    if (o.hat === "headband") hat = `<path d="M${P(-1.02, -.18)}C${P(-.92, -1.08)} ${P(.92, -1.08)} ${P(1.02, -.18)}" fill="none" stroke="${HT}" stroke-width="7.5" stroke-linecap="round" filter="url(#${p}sh)"/>`;
-    if (o.hat === "beanie") hat = `<g filter="url(#${p}sh)"><circle cx="100" cy="${Y(-1.22)}" r="10" fill="${light(hatCol, .5)}"/><path d="M${P(-1.1, -.42)}C${P(-1.14, -1.32)} ${P(1.14, -1.32)} ${P(1.1, -.42)}Z" fill="${HT}"/><path d="M${P(-1.13, -.58)}C${P(-.6, -.68)} ${P(.6, -.68)} ${P(1.13, -.58)}L${P(1.12, -.36)}C${P(.6, -.46)} ${P(-.6, -.46)} ${P(-1.12, -.36)}Z" fill="${dark(hatCol, .12)}"/>` +
-      [-.8, -.5, -.2, .1, .4, .7].map(f => `<path d="M${P(f, -.64)}L${P(f + .02, -.44)}" stroke="${dark(hatCol, .3)}" stroke-width="1.4" opacity=".5"/>`).join("") + `</g>`;
-    if (o.hat === "cap") hat = `<g filter="url(#${p}sh)"><path d="M${P(-1.06, -.42)}C${P(-1.08, -1.3)} ${P(1.08, -1.3)} ${P(1.06, -.42)}Z" fill="${HT}"/><path d="M100 ${Y(-1.07)}V${Y(-.5)}" stroke="${dark(hatCol, .25)}" stroke-width="1.4" opacity=".6"/><circle cx="100" cy="${Y(-1.07)}" r="3.5" fill="${dark(hatCol, .2)}"/><ellipse cx="100" cy="${Y(-.42)}" rx="${(rx * 1.02).toFixed(1)}" ry="8.5" fill="${dark(hatCol, .18)}"/><ellipse cx="100" cy="${Y(-.46)}" rx="${(rx * .9).toFixed(1)}" ry="4" fill="${light(hatCol, .2)}" opacity=".5"/></g>`;
+    // 머리 부피(곱슬·올림머리 등)에 맞춰 모자 폭을 키운다
+    const vol = { curly: 1.3, perm: 1.2, waveLong: 1.14, waveBob: 1.14, waveShort: 1.12, quiff: 1.08, bob: 1.1, long: 1.1 }[o.hair] || 1.06;
+    const HTL = light(hatCol, .35), HTD = dark(hatCol, .28);
+    if (o.hat === "headband") {
+      // 머리 윗부분 곡선을 따라 감싸는 띠: 위가 밝고 아래가 어두운 두께감 + 얇은 하이라이트
+      const r = (f) => P(f * vol, -1 + (1 - Math.cos(f * Math.PI / 2)) * 0.95);
+      const band = `M${P(-1.0 * vol, -0.08)}C${P(-1.04 * vol, -0.62)} ${P(-0.62 * vol, -1.02)} 100 ${Y(-1.04)}C${P(0.62 * vol, -1.02)} ${P(1.04 * vol, -0.62)} ${P(1.0 * vol, -0.08)}`;
+      hat = `<g filter="url(#${p}sh)"><path d="${band}" fill="none" stroke="${HTD}" stroke-width="11" stroke-linecap="round"/>` +
+        `<path d="${band}" fill="none" stroke="${hatCol}" stroke-width="8" stroke-linecap="round" transform="translate(0 -1)"/>` +
+        `<path d="M${P(-0.9 * vol, -0.5)}C${P(-0.7 * vol, -0.92)} ${P(-0.3, -1.04)} 100 ${Y(-1.06)}" fill="none" stroke="${HTL}" stroke-width="2.4" stroke-linecap="round" opacity=".8"/></g>`;
+      void r;
+    }
+    if (o.hat === "beanie") {
+      // 정수리를 덮는 둥근 몸통 + 머리를 둘러 감싸는(양옆이 내려간) 접힌 밴드
+      const w = 1.12 * vol, top = -1.3 - (vol - 1) * 0.6;
+      const domeD = `M${P(-w, -0.38)}C${P(-w * 1.02, top + 0.15)} ${P(-0.55, top)} 100 ${Y(top)}C${P(0.55, top)} ${P(w * 1.02, top + 0.15)} ${P(w, -0.38)}Z`;
+      const bandTop = `M${P(-w - 0.02, -0.3)}Q100 ${Y(-0.72)} ${P(w + 0.02, -0.3)}`;
+      const bandD = `${bandTop}L${P(w, -0.06)}Q100 ${Y(-0.46)} ${P(-w, -0.06)}Z`;
+      let ribs = "";
+      for (let i = -5; i <= 5; i++) { const f = i / 5.6 * w; const yt = -0.3 - 0.42 * (1 - (f / w) * (f / w)) + 0.02, yb = -0.06 - 0.4 * (1 - (f / w) * (f / w)); ribs += `<path d="M${P(f, yt)}L${P(f * 1.01, yb)}" stroke="${HTD}" stroke-width="1.3" opacity=".45"/>`; }
+      let dRibs = "";
+      for (let i = -3; i <= 3; i++) { const f = i / 3.6 * w; dRibs += `<path d="M${P(f * 0.25, top + 0.08)}Q${P(f * 0.9, -0.85)} ${P(f, -0.5)}" fill="none" stroke="${HTD}" stroke-width="1.1" opacity=".3"/>`; }
+      hat = `<g filter="url(#${p}sh)"><circle cx="100" cy="${Y(top - 0.04)}" r="11" fill="${light(hatCol, .55)}"/><circle cx="96" cy="${(+Y(top - 0.04) - 3).toFixed(1)}" r="4" fill="#fff" opacity=".5"/>` +
+        `<path d="${domeD}" fill="${HT}"/>${dRibs}<ellipse cx="${X(-0.35)}" cy="${Y(top + 0.32)}" rx="${(rx * 0.32).toFixed(1)}" ry="7" fill="#fff" opacity=".22" filter="url(#${p}blur)"/>` +
+        `<path d="${bandD}" fill="${dark(hatCol, .1)}"/>${ribs}<path d="${bandTop}" fill="none" stroke="${HTL}" stroke-width="1.6" opacity=".6"/></g>` +
+        `<path d="M${P(-0.85, -0.16)}Q100 ${Y(-0.44)} ${P(0.85, -0.16)}" fill="none" stroke="#1b1430" stroke-width="5" opacity=".14" filter="url(#${p}blur)"/>`;
+    }
+    if (o.hat === "cap") {
+      // 정수리를 덮는 크라운(솔기 3줄) + 앞으로 튀어나온 챙(가운데가 더 내려오게)과 이마 그림자
+      const w = 1.08 * vol, top = -1.24 - (vol - 1) * 0.5;
+      const crownD = `M${P(-w, -0.3)}C${P(-w * 1.02, top + 0.2)} ${P(-0.55, top)} 100 ${Y(top)}C${P(0.55, top)} ${P(w * 1.02, top + 0.2)} ${P(w, -0.3)}Q100 ${Y(-0.5)} ${P(-w, -0.3)}Z`;
+      const seams = [-0.5, 0, 0.5].map(f => `<path d="M100 ${Y(top + 0.02)}Q${P(f * 0.9, top + 0.3)} ${P(f * w * 0.95, -0.42 - 0.06 * (1 - Math.abs(f)))}" fill="none" stroke="${HTD}" stroke-width="1.3" opacity=".45"/>`).join("");
+      const visorD = `M${P(-0.98, -0.34)}Q100 ${Y(-0.58)} ${P(0.98, -0.34)}C${P(1.02, -0.24)} ${P(0.62, -0.18)} 100 ${Y(-0.18)}C${P(-0.62, -0.18)} ${P(-1.02, -0.24)} ${P(-0.98, -0.34)}Z`;
+      hat = `<path d="M${P(-0.8, -0.24)}Q100 ${Y(-0.1)} ${P(0.8, -0.24)}" fill="none" stroke="#1b1430" stroke-width="7" opacity=".14" filter="url(#${p}blur)"/>` +
+        `<g filter="url(#${p}sh)"><path d="${crownD}" fill="${HT}"/>${seams}<circle cx="100" cy="${Y(top + 0.01)}" r="3.6" fill="${HTD}"/>` +
+        `<ellipse cx="${X(-0.35)}" cy="${Y(top + 0.3)}" rx="${(rx * 0.3).toFixed(1)}" ry="7" fill="#fff" opacity=".24" filter="url(#${p}blur)"/>` +
+        `<path d="${visorD}" fill="${dark(hatCol, .16)}"/><path d="M${P(-0.9, -0.3)}Q100 ${Y(-0.5)} ${P(0.9, -0.3)}" fill="none" stroke="${HTL}" stroke-width="2" opacity=".55"/></g>`;
+    }
     if (o.hat === "pin") { const cx = +X(.62), cyy = +Y(-.66); let pts = ""; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 3.4 : 8; pts += `${(cx + Math.cos(a) * r).toFixed(1)},${(cyy + Math.sin(a) * r).toFixed(1)} `; } hat = `<polygon points="${pts}" fill="${HT}" stroke="${dark(hatCol, .25)}" stroke-width="1" stroke-linejoin="round" filter="url(#${p}sh)"/>`; }
     if (o.hat === "flower") { const cx = +X(.66), cyy = +Y(-.64); hat = `<g filter="url(#${p}sh)">` + [0, 1, 2, 3, 4].map(i => { const a = -Math.PI / 2 + i * 2 * Math.PI / 5; return `<circle cx="${(cx + Math.cos(a) * 5.5).toFixed(1)}" cy="${(cyy + Math.sin(a) * 5.5).toFixed(1)}" r="4.6" fill="${HT}"/>`; }).join("") + `<circle cx="${cx}" cy="${cyy}" r="3.4" fill="#F4C542"/></g>`; }
 
@@ -973,7 +1016,7 @@ const StarAvatar = (() => {
     const showBadge = opts.badge !== false;
     return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img">${label}<defs>${defs}</defs>` +
       `<g clip-path="url(#${p}clip)"><rect width="200" height="200" fill="url(#${p}bg)"/>${hair.back}${neck}${outfit}` +
-      `<g filter="url(#${p}sh)">${ears}${headShape}</g>${headHi}${blush}${freckles}${hair.front}${hat}${brows}${eyes}${nose}${facial}${mouth}${glasses}</g>${showBadge ? badge : ""}</svg>`;
+      `<g filter="url(#${p}sh)">${ears}${headShape}</g>${headHi}${blush}${freckles}${hair.front}${brows}${hat}${eyes}${nose}${facial}${mouth}${glasses}</g>${showBadge ? badge : ""}</svg>`;
   }
 
   function random() {
@@ -1166,17 +1209,33 @@ const StarAvatar = (() => {
   const avatarSvg = (name, opts = {}) => { const t = teacherOf(name); return StarAvatar.svg(t && t.avatar ? t.avatar : { bg: 6, outfitColor: 7 }, Object.assign({ badge: false }, opts)); };
 
   /* ---------- 불러오기 ---------- */
+  // 지난번에 받은 내용을 이 브라우저에 보관해 두었다가, 다음에 열 때 바로 보여 준다 (그동안 최신 내용을 새로 불러옴)
+  const CACHE_KEY = "star-cache-v1:" + (API || "demo");
+  function applyData(j) {
+    S.teachers = (j.teachers || []).map(normTeacher).filter(t => t.name);
+    S.posts = (j.posts || []).map(normPost).filter(p => p.id);
+    S.comments = (j.comments || []).map(c => ({ id: str(c.id, 120), postId: str(c.postId, 120), name: str(c.name, 20), text: str(c.text, 300), createdAt: +c.createdAt || 0 })).filter(c => c.id && c.text);
+    S.loaded = true;
+  }
+  function saveCache(j) {
+    if (DEMO) return;
+    try { const raw = JSON.stringify({ t: Date.now(), teachers: j.teachers, posts: j.posts, comments: j.comments }); if (raw.length < 1500000) localStorage.setItem(CACHE_KEY, raw); } catch {}
+  }
+  function loadCache() {
+    if (DEMO) return false;
+    try { const raw = localStorage.getItem(CACHE_KEY); if (!raw) return false; applyData(JSON.parse(raw)); return true; } catch { return false; }
+  }
   let loading = false;
   async function load(first) {
     if (loading) return;
     loading = true;
-    const slow = first ? setTimeout(() => { if (!S.loaded) notice("자료를 불러오는 데 시간이 걸리고 있어요. 잠시만 기다려 주세요."); }, 8000) : null;
+    const slow = first ? setTimeout(() => { if (!S.fresh) notice("자료를 불러오는 데 시간이 걸리고 있어요. 잠시만 기다려 주세요."); }, 8000) : null;
     try {
       const j = await apiList();
-      S.teachers = (j.teachers || []).map(normTeacher).filter(t => t.name);
-      S.posts = (j.posts || []).map(normPost).filter(p => p.id);
-      S.comments = (j.comments || []).map(c => ({ id: str(c.id, 120), postId: str(c.postId, 120), name: str(c.name, 20), text: str(c.text, 300), createdAt: +c.createdAt || 0 })).filter(c => c.id && c.text);
-      S.loaded = true; S.loadErr = false;
+      applyData(j);
+      S.loadErr = false; S.fresh = true;
+      saveCache(j);
+      store.set("star-count", String(S.teachers.length));
       if (DEMO) notice("지금은 데모 모드예요. 이 브라우저에만 저장되고, index.html의 API_URL에 Apps Script 주소를 넣으면 모든 선생님이 함께 쓰는 보드가 돼요.");
       else notice("");
       renderAll();
@@ -1240,36 +1299,43 @@ const StarAvatar = (() => {
   function renderCover(force) {
     const box = $("#constellation");
     if (!box) return;
-    $("#cover-count").textContent = S.loaded ? `선생님 ${S.teachers.length}명이 나눈 수업자료 ${S.posts.length}개` : "별자리를 불러오는 중이에요";
-    const sig = JSON.stringify(S.teachers.map(t => [t.name, t.avatar]));
-    if (!force && sig === coverSig && box.firstChild) return; // 바뀐 게 없으면 다시 그리지 않아요 (반짝임·선 그리기가 끊기지 않게)
-    coverSig = sig;
+    const pending = !S.loaded;
+    const countEl = $("#cover-count");
+    if (pending) countEl.replaceChildren("별자리를 불러오는 중이에요", el("span", { class: "dots", "aria-hidden": "true" }, el("i"), el("i"), el("i")));
+    else countEl.textContent = `선생님 ${S.teachers.length}명이 나눈 수업자료 ${S.posts.length}개`;
+    // 불러오기 전에는 지난번 인원(없으면 15명)만큼 빈 별을 먼저 띄워 별자리 모양과 움직임이 바로 보이게
+    const list = pending ? Array.from({ length: Math.max(3, +store.get("star-count") || 15) }, () => ({ name: "", avatar: null, pending: true })) : S.teachers.slice();
+    const sig = pending ? "pending" : JSON.stringify(S.teachers.map(t => [t.name, t.avatar]));
+    const n = Math.max(list.length, 1);
     const W = 800, H = 760, cx = 400, cy = 402, R = 330, r = 136, AV = 60;
-    const list = S.teachers.slice();
-    const seats = starSeats(Math.max(list.length, 1), cx, cy, R, r);
-    const path = seats.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join("") + "Z";
+    const seats = starSeats(n, cx, cy, R, r);
+    const rebuild = force || !box.firstChild || box.dataset.count !== String(n);
+    if (!rebuild && sig === coverSig) return; // 바뀐 게 없으면 다시 그리지 않아요 (반짝임·선 그리기가 끊기지 않게)
+    const wasPending = coverSig === "pending";
+    coverSig = sig;
     let nodes = "";
     list.forEach((t, i) => {
       const [x, y] = seats[i];
       const delay = ((i * 0.37) % 2.4).toFixed(2), dur = (2.2 + (i % 5) * 0.35).toFixed(2);
       const glow = `<circle class="glow" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${t.avatar ? 46 : 26}" fill="url(#cv-glow)" style="animation-delay:-${delay}s;animation-duration:${dur}s"/>`;
-      let body;
-      if (t.avatar) {
-        body = StarAvatar.svg(t.avatar, { badge: false }).replace("<svg ", `<svg x="${(x - AV / 2).toFixed(1)}" y="${(y - AV / 2).toFixed(1)}" width="${AV}" height="${AV}" `) +
-          `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${AV / 2 + 1.5}" fill="none" stroke="#FFE7A3" stroke-width="2" opacity=".9"/>`;
-      } else {
-        // 반짝임 애니메이션이 위치(translate)를 덮어쓰지 않게 바깥 g에서 옮기고 안쪽 path만 반짝이게
-        body = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><path class="spark" d="M0 -13C1.6 -3.5 3.5 -1.6 13 0C3.5 1.6 1.6 3.5 0 13C-1.6 3.5 -3.5 1.6 -13 0C-3.5 -1.6 -1.6 -3.5 0 -13Z" fill="#FFF4D2" style="animation-delay:-${delay}s;animation-duration:${dur}s"/></g>`;
-      }
-      nodes += `<g class="cv-node" tabindex="0" role="button" data-value="${esc(t.name)}" aria-label="${esc(t.name)} 선생님 별, 자료 보기">${glow}${body}</g>`;
+      const spark = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><path class="spark" d="M0 -13C1.6 -3.5 3.5 -1.6 13 0C3.5 1.6 1.6 3.5 0 13C-1.6 3.5 -3.5 1.6 -13 0C-3.5 -1.6 -1.6 -3.5 0 -13Z" fill="#FFF4D2" style="animation-delay:-${delay}s;animation-duration:${dur}s"/></g>`;
+      if (t.pending) { nodes += `<g class="cv-node pending" aria-hidden="true">${glow}${spark}</g>`; return; }
+      const body = t.avatar
+        ? StarAvatar.svg(t.avatar, { badge: false }).replace("<svg ", `<svg x="${(x - AV / 2).toFixed(1)}" y="${(y - AV / 2).toFixed(1)}" width="${AV}" height="${AV}" `) + `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${AV / 2 + 1.5}" fill="none" stroke="#FFE7A3" stroke-width="2" opacity=".9"/>`
+        : spark;
+      const appear = wasPending && t.avatar ? " appear" : "";
+      nodes += `<g class="cv-node${appear}" tabindex="0" role="button" data-value="${esc(t.name)}" aria-label="${esc(t.name)} 선생님 별, 자료 보기" style="animation-delay:${(i * 0.05).toFixed(2)}s">${glow}${body}</g>`;
     });
-    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="STAR 교사단 별자리">
+    if (rebuild) {
+      const path = seats.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join("") + "Z";
+      box.dataset.count = String(n);
+      box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="STAR 교사단 별자리">
       <defs>
         <radialGradient id="cv-glow"><stop offset="0" stop-color="#FFE08A" stop-opacity=".85"/><stop offset=".45" stop-color="#FFC94A" stop-opacity=".28"/><stop offset="1" stop-color="#FFC94A" stop-opacity="0"/></radialGradient>
         <filter id="cv-soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
       </defs>
       <path class="cv-lines" d="${path}" pathLength="1" fill="none" stroke="#FFE7A3" stroke-width="1.6" stroke-linejoin="round"/>
-      ${nodes}
+      <g id="cv-nodes">${nodes}</g>
       <g class="cv-title" filter="url(#cv-soft)">
         <path d="${STAR_PATH}" transform="translate(${cx - 17} ${cy - 112}) scale(.72)" fill="#FFD25A"/>
         <text x="${cx}" y="${cy - 16}" text-anchor="middle" dominant-baseline="central" class="cv-star">STAR</text>
@@ -1277,6 +1343,9 @@ const StarAvatar = (() => {
       <text x="${cx}" y="${cy + 40}" text-anchor="middle" dominant-baseline="central" class="cv-team">교사단</text>
       <text x="${cx}" y="${cy + 74}" text-anchor="middle" dominant-baseline="central" class="cv-sub">별빛 나눔터</text>
     </svg>`;
+    } else {
+      box.querySelector("#cv-nodes").innerHTML = nodes; // 선과 제목은 그대로 두고 별만 바꿔 끼움
+    }
   }
 
   // 배경 밤하늘: 캔버스에 작은 별들이 깜빡임
@@ -1938,7 +2007,9 @@ const StarAvatar = (() => {
   async function init() {
     wire();
     const h = (location.hash || "").slice(1);
+    const cached = loadCache();
     if (h) enter({ kind: "all" }); else showCover();
+    if (cached) renderAll();
     await load(true);
     if (h && S.posts.some(p => p.id === h)) openDetail(h);
     setInterval(() => {
