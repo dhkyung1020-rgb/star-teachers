@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>STAR 교사단 수업자료 나눔터</title>
+<title>STAR 교사단 별빛 나눔터</title>
 <meta name="description" content="AI·디지털 수업을 함께 만들고 나누는 STAR 교사단의 수업자료 공유 공간">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,7 @@
    비워 두면 이 브라우저에서만 동작하는 '데모 모드'로 열립니다.
    ===================================================================== */
 const CONFIG = {
-  API_URL: "",
+  API_URL: "https://script.google.com/macros/s/AKfycbzfysVvqTSG9W1amuuU8Fywua8ELX45jM9U6nU740RH3X2i1fm0gzdJ5DXVzTUK9WMQyA/exec",
   POLL_SECONDS: 30,
 };
 </script>
@@ -158,6 +158,9 @@ body.on-cover { background: #060a1c; }
 .cover-ghost { border: 1px solid rgba(255,231,163,.5); border-radius: 999px; padding: 14px 24px; font-size: 15px; font-weight: 600; cursor: pointer; color: #FFE7A3; background: rgba(255,255,255,.04); }
 .cover-ghost:hover { background: rgba(255,255,255,.1); }
 .cover :focus-visible { outline: 3px solid #FFD25A; outline-offset: 3px; }
+.cv-tip { position: absolute; z-index: 5; transform: translate(-50%, -100%); pointer-events: none; white-space: nowrap; background: rgba(255,248,226,.97); color: #1B1A33; border-radius: 999px; padding: 6px 13px; font-size: 14px; font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,.35), 0 0 18px rgba(255,210,90,.35); }
+.cv-tip small { font-weight: 500; color: #6B6890; margin-left: 6px; font-size: 12.5px; }
+.cv-tip::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 10px; height: 10px; background: inherit; transform: translateX(-50%) rotate(45deg); border-radius: 2px; }
 .cover-note { margin: 2px 0 0; color: #8E9AC8; font-size: 13px; text-align: center; }
 @media (prefers-reduced-motion: no-preference) {
   .cv-lines { stroke-dashoffset: 1; animation: cv-draw 2.6s ease-out .2s forwards; }
@@ -332,6 +335,7 @@ footer { color: var(--muted); font-size: 12.5px; padding: 30px 0 50px; }
 
 <section class="cover" id="cover" aria-label="STAR 교사단 표지">
   <canvas id="sky" aria-hidden="true"></canvas>
+  <div class="cv-tip" id="cv-tip" role="tooltip" hidden></div>
   <div class="cover-inner">
     <div class="constellation" id="constellation"></div>
     <p class="cover-count" id="cover-count">별자리를 불러오는 중이에요</p>
@@ -349,7 +353,7 @@ footer { color: var(--muted); font-size: 12.5px; padding: 30px 0 50px; }
     <div class="brand">
       <button type="button" id="brand-logo" class="logo-btn" aria-label="표지로 돌아가기"><svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="23" fill="var(--accent)"/><path d="M24 9.5l4.3 8.8 9.7 1.4-7 6.8 1.7 9.6L24 31.6l-8.7 4.5 1.7-9.6-7-6.8 9.7-1.4z" fill="var(--navy)"/></svg></button>
       <div>
-        <h1>STAR 교사단 수업자료 나눔터</h1>
+        <h1>STAR 교사단 별빛 나눔터</h1>
         <p>AI·디지털 수업을 함께 만들고 나누는 선생님들의 자료 공간</p>
       </div>
     </div>
@@ -1257,7 +1261,7 @@ const StarAvatar = (() => {
         // 반짝임 애니메이션이 위치(translate)를 덮어쓰지 않게 바깥 g에서 옮기고 안쪽 path만 반짝이게
         body = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><path class="spark" d="M0 -13C1.6 -3.5 3.5 -1.6 13 0C3.5 1.6 1.6 3.5 0 13C-1.6 3.5 -3.5 1.6 -13 0C-3.5 -1.6 -1.6 -3.5 0 -13Z" fill="#FFF4D2" style="animation-delay:-${delay}s;animation-duration:${dur}s"/></g>`;
       }
-      nodes += `<g class="cv-node" tabindex="0" role="button" data-value="${esc(t.name)}" aria-label="${t.avatar ? "선생님 별" : "아직 캐릭터가 없는 별"}, 자료 보기">${glow}${body}</g>`;
+      nodes += `<g class="cv-node" tabindex="0" role="button" data-value="${esc(t.name)}" aria-label="${esc(t.name)} 선생님 별, 자료 보기">${glow}${body}</g>`;
     });
     box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="STAR 교사단 별자리">
       <defs>
@@ -1271,7 +1275,7 @@ const StarAvatar = (() => {
         <text x="${cx}" y="${cy - 16}" text-anchor="middle" dominant-baseline="central" class="cv-star">STAR</text>
       </g>
       <text x="${cx}" y="${cy + 40}" text-anchor="middle" dominant-baseline="central" class="cv-team">교사단</text>
-      <text x="${cx}" y="${cy + 74}" text-anchor="middle" dominant-baseline="central" class="cv-sub">수업자료 나눔터</text>
+      <text x="${cx}" y="${cy + 74}" text-anchor="middle" dominant-baseline="central" class="cv-sub">별빛 나눔터</text>
     </svg>`;
   }
 
@@ -1316,6 +1320,7 @@ const StarAvatar = (() => {
   }
   function enter(sel) {
     if (sel) S.sel = sel;
+    $("#cv-tip").hidden = true;
     const c = $("#cover");
     const finish = () => { c.hidden = true; sky.stop(); };
     $("#app").hidden = false;
@@ -1864,6 +1869,24 @@ const StarAvatar = (() => {
     $("#constellation").addEventListener("click", (e) => coverAct(e.target));
     $("#constellation").addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.closest && e.target.closest(".cv-node")) { e.preventDefault(); coverAct(e.target); } });
     let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => sky.resize(), 200); });
+    // 별 위에 마우스를 올리거나 키보드로 옮기면 선생님 성함 띄우기
+    const tip = $("#cv-tip");
+    const showTip = (node) => {
+      const name = node.getAttribute("data-value"), t = teacherOf(name);
+      if (!t) return;
+      const n = postsOf(name).length;
+      tip.replaceChildren(`${name} 선생님`, el("small", { text: t.avatar ? `자료 ${n}개` : "캐릭터 준비 중" }));
+      const target = node.querySelector("svg, .spark") || node;
+      const r = target.getBoundingClientRect(), c = $("#cover").getBoundingClientRect();
+      tip.style.left = (r.left + r.width / 2 - c.left) + "px";
+      tip.style.top = (r.top - c.top - 10) + "px";
+      tip.hidden = false;
+    };
+    const hideTip = () => { tip.hidden = true; };
+    $("#constellation").addEventListener("mouseover", (e) => { const n = e.target.closest && e.target.closest(".cv-node"); if (n) showTip(n); });
+    $("#constellation").addEventListener("mouseout", (e) => { const n = e.target.closest && e.target.closest(".cv-node"); if (n && !(e.relatedTarget && n.contains(e.relatedTarget))) hideTip(); });
+    $("#constellation").addEventListener("focusin", (e) => { const n = e.target.closest && e.target.closest(".cv-node"); if (n) showTip(n); });
+    $("#constellation").addEventListener("focusout", hideTip);
     $("#brand-logo").addEventListener("click", showCover);
     $("#btn-add").addEventListener("click", () => openForm(null));
     $("#btn-avatar").addEventListener("click", () => openMaker(null));
