@@ -1,0 +1,1932 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STAR 교사단 수업자료 나눔터</title>
+<meta name="description" content="AI·디지털 수업을 함께 만들고 나누는 STAR 교사단의 수업자료 공유 공간">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+/* =====================================================================
+   설정: Apps Script 웹 앱 주소(…/exec)를 아래 따옴표 안에 붙여 넣으세요.
+   비워 두면 이 브라우저에서만 동작하는 '데모 모드'로 열립니다.
+   ===================================================================== */
+const CONFIG = {
+  API_URL: "",
+  POLL_SECONDS: 30,
+};
+</script>
+
+<style>
+/* Layout: 헤더(제목·통계·버튼) → 탭(교사단 지도 | 전체 자료) → 지도(마인드맵) + 선택 자료 패널 / 검색·필터 + 카드 담벼락 */
+:root {
+  --bg: #eef1f7;
+  --surface: #ffffff;
+  --ink: #16213e;
+  --muted: #5d6784;
+  --line: #d6dbe8;
+  --accent: #f5b300;
+  --accent-ink: #3a2a00;
+  --navy: #1b2a5c;
+  --navy-ink: #ffffff;
+  --danger: #c0392b;
+  --c1: #fff3c4; --c2: #ffdfe1; --c3: #d9f2e3; --c4: #dbe8ff; --c5: #ece0ff; --c6: #ffffff;
+  --shadow: 0 1px 2px rgba(22,33,62,.06), 0 4px 14px rgba(22,33,62,.07);
+  --font-display: "Black Han Sans", "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1424; --surface: #182036; --ink: #e8ecf7; --muted: #9aa4c2; --line: #2b3554;
+    --accent: #ffc83d; --accent-ink: #2a1f00; --navy: #2a3c7a; --navy-ink: #ffffff; --danger: #ff7b6b;
+    --c1: #3a3420; --c2: #3d2629; --c3: #1f3a2d; --c4: #22314f; --c5: #31284a; --c6: #1d263f;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.28);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1424; --surface: #182036; --ink: #e8ecf7; --muted: #9aa4c2; --line: #2b3554;
+  --accent: #ffc83d; --accent-ink: #2a1f00; --navy: #2a3c7a; --navy-ink: #ffffff; --danger: #ff7b6b;
+  --c1: #3a3420; --c2: #3d2629; --c3: #1f3a2d; --c4: #22314f; --c5: #31284a; --c6: #1d263f;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.28);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+a { color: inherit; }
+[hidden] { display: none !important; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+.top { background: var(--navy); color: var(--navy-ink); }
+.top .wrap { padding-top: 20px; padding-bottom: 18px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.brand { display: flex; gap: 14px; align-items: center; flex: 1 1 380px; min-width: 0; }
+.brand svg { flex: none; display: block; }
+.logo-btn { border: 0; background: none; padding: 0; cursor: pointer; border-radius: 50%; }
+.brand h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(22px, 3.2vw, 30px); margin: 0; line-height: 1.15; text-wrap: balance; }
+.brand p { margin: 2px 0 0; opacity: .82; font-size: 14px; }
+.stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.stat { background: rgba(255,255,255,.1); border-radius: 10px; padding: 6px 12px; font-size: 13px; white-space: nowrap; }
+.stat b { font-size: 18px; font-variant-numeric: tabular-nums; margin-right: 3px; color: var(--accent); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-light { background: rgba(255,255,255,.14); color: var(--navy-ink); }
+.btn-light:hover { background: rgba(255,255,255,.22); }
+.btn-ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+.btn-ghost:hover { background: var(--bg); }
+.btn-danger { background: transparent; color: var(--danger); border: 1px solid currentColor; }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn[disabled] { opacity: .55; cursor: default; }
+
+.notice { margin-top: 12px; }
+.notice div { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0; padding: 10px 14px; font-size: 14px; color: var(--muted); }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-top: 16px; border-bottom: 1px solid var(--line); }
+.tab { border: 0; background: none; padding: 10px 16px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+/* Mind map */
+.map-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; margin-top: 16px; padding: 10px; overflow-x: auto; }
+.map-card svg.map { display: block; width: 100%; max-width: 1000px; min-width: 700px; height: auto; margin: 0 auto; }
+.map .node { cursor: pointer; }
+.map .node:focus-visible { outline: none; }
+.map .node:focus-visible .ring, .map .node:hover .ring { stroke-width: 4; }
+.map text { fill: var(--ink); font-family: var(--font-body); }
+.map .hub-t { font-family: var(--font-display); font-size: 21px; fill: var(--navy); }
+.map .hub-s { font-size: 12px; font-weight: 600; fill: var(--accent-ink); }
+.map .cnt0 { fill: var(--line); stroke: var(--surface); stroke-width: 2; }
+.map .cnt0-t { fill: var(--muted); font-size: 11px; font-weight: 700; }
+.map .subj-t { font-weight: 700; font-size: 15px; }
+.map .subj-s { font-size: 11.5px; fill: var(--muted); }
+.map .cnt { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.map .cnt-t { fill: var(--accent-ink); font-size: 11px; font-weight: 700; }
+.map .empty-av { opacity: .5; }
+.map-hint { color: var(--muted); font-size: 13px; padding: 4px 10px 8px; display: flex; gap: 14px; flex-wrap: wrap; }
+.mlist { display: grid; gap: 10px; padding: 4px; }
+.mroot { display: flex; gap: 12px; align-items: center; border: 2px solid transparent; background: none; padding: 4px; border-radius: 14px; cursor: pointer; text-align: left; }
+.mroot.sel { border-color: var(--accent); }
+.mroot b { font-family: var(--font-display); font-weight: 400; font-size: 22px; display: block; }
+.mroot small { color: var(--muted); font-size: 13px; }
+.mgroup { margin-left: 22px; position: relative; }
+.mgroup::before { content: ""; position: absolute; left: -16px; top: -10px; bottom: 50%; width: 12px; border-left: 3px solid var(--line); border-bottom: 3px solid var(--line); border-radius: 0 0 0 10px; }
+.mgroup:not(:last-child)::after { content: ""; position: absolute; left: -16px; top: 50%; bottom: -12px; border-left: 3px solid var(--line); }
+.mgroup { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; display: grid; gap: 8px; }
+.mgroup-head { display: flex; justify-content: space-between; align-items: center; border: 0; background: none; padding: 0; cursor: pointer; text-align: left; }
+.mgroup-head b { font-size: 16px; display: inline-flex; gap: 8px; align-items: center; }
+.mgroup-head b i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.mgroup-head span { color: var(--muted); font-size: 13px; }
+.mavatars { display: flex; gap: 8px; flex-wrap: wrap; }
+.mav { position: relative; border: 0; background: none; padding: 0; cursor: pointer; border-radius: 50%; }
+.mav svg { width: 52px; height: 52px; display: block; border-radius: 50%; }
+.mav.sel svg { box-shadow: 0 0 0 3px var(--accent); }
+.mav .n { position: absolute; right: -3px; top: -3px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 700; min-width: 19px; height: 19px; border-radius: 10px; display: grid; place-items: center; padding: 0 4px; border: 2px solid var(--surface); }
+.mav .n.zero { background: var(--line); color: var(--muted); }
+.mav.noav svg { opacity: .5; }
+
+/* Cover: 밤하늘 별자리 (어두운 단일 테마) */
+body.on-cover { background: #060a1c; }
+.cover { position: relative; min-height: 100vh; min-height: 100svh; overflow: hidden; color: #F2F4FF; color-scheme: dark;
+  background: radial-gradient(ellipse 80% 60% at 50% 42%, #1A2357 0%, #0D1333 55%, #060A1C 100%); display: grid; place-items: center; transition: opacity .6s ease, transform .6s ease; }
+.cover.leaving { opacity: 0; transform: scale(1.04); pointer-events: none; }
+.cover #sky { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cover-inner { position: relative; width: min(820px, 100%); padding: 20px 16px 36px; display: grid; justify-items: center; gap: 12px; }
+.constellation { width: min(100%, 78vh, 78svh); aspect-ratio: 800 / 760; }
+.constellation svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.cv-lines { stroke-dasharray: 1; stroke-dashoffset: 0; opacity: .5; }
+.cv-node { cursor: pointer; }
+.cv-node:focus-visible { outline: none; }
+.cv-node:focus-visible .glow, .cv-node:hover .glow { opacity: 1 !important; }
+.cv-node .glow { transform-box: fill-box; transform-origin: center; opacity: .8; }
+.cv-node .spark { transform-box: fill-box; transform-origin: center; }
+.cv-star { font-family: var(--font-display); font-size: 78px; fill: #FFD25A; letter-spacing: .04em; }
+.cv-team { font-family: var(--font-display); font-size: 34px; fill: #FFFFFF; }
+.cv-sub { font-family: var(--font-body); font-size: 17px; fill: #C9D2F5; letter-spacing: .08em; }
+.cover-count { margin: 0; color: #C9D2F5; font-size: 15px; text-align: center; font-variant-numeric: tabular-nums; }
+.cover-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+.enter { border: 0; border-radius: 999px; padding: 15px 46px; font-size: 18px; font-weight: 700; cursor: pointer; color: #2A1F00; background: #FFD25A; box-shadow: 0 0 0 0 rgba(255,210,90,.5); }
+.enter:hover { background: #FFDD7A; }
+.cover-ghost { border: 1px solid rgba(255,231,163,.5); border-radius: 999px; padding: 14px 24px; font-size: 15px; font-weight: 600; cursor: pointer; color: #FFE7A3; background: rgba(255,255,255,.04); }
+.cover-ghost:hover { background: rgba(255,255,255,.1); }
+.cover :focus-visible { outline: 3px solid #FFD25A; outline-offset: 3px; }
+.cover-note { margin: 2px 0 0; color: #8E9AC8; font-size: 13px; text-align: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .cv-lines { stroke-dashoffset: 1; animation: cv-draw 2.6s ease-out .2s forwards; }
+  .cv-node .glow { animation: cv-twinkle 2.6s ease-in-out infinite; }
+  .cv-node .spark { animation: cv-spark 2.6s ease-in-out infinite; }
+  .enter { animation: cv-pulse 2.8s ease-in-out infinite; }
+  @keyframes cv-draw { to { stroke-dashoffset: 0; } }
+  @keyframes cv-twinkle { 0%, 100% { opacity: .35; transform: scale(.82); } 50% { opacity: 1; transform: scale(1.12); } }
+  @keyframes cv-spark { 0%, 100% { opacity: .55; transform: scale(.75) rotate(0deg); } 50% { opacity: 1; transform: scale(1.15) rotate(20deg); } }
+  @keyframes cv-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,210,90,.45); } 50% { box-shadow: 0 0 0 14px rgba(255,210,90,0); } }
+}
+
+/* Panel */
+.panel { margin-top: 18px; }
+.filter-banner { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 16px; margin: 18px 0 0; }
+.panel-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.panel-head .pav svg { width: 54px; height: 54px; display: block; }
+.panel-head h2 { font-family: var(--font-display); font-weight: 400; font-size: 22px; margin: 0; text-wrap: balance; }
+.panel-head p { margin: 0; color: var(--muted); font-size: 14px; }
+.panel-head .grow { flex: 1 1 auto; min-width: 0; }
+
+/* Toolbar */
+.toolbar { display: grid; gap: 12px; margin: 16px 0 6px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.search { flex: 1 1 260px; position: relative; }
+.search input { width: 100%; padding: 10px 12px 10px 38px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.select { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 9px 14px; cursor: pointer; font-weight: 500; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--navy); color: var(--navy-ink); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip .n { font-variant-numeric: tabular-nums; opacity: .7; margin-left: 3px; }
+
+/* Cards */
+.wall { columns: 270px; column-gap: 16px; }
+.wall .card { break-inside: avoid; margin-bottom: 16px; }
+.card { background: var(--card, var(--surface)); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; cursor: pointer; display: block; width: 100%; text-align: left; border: 1px solid transparent; padding: 0; transition: transform .12s ease; }
+.card:hover { transform: translateY(-2px); }
+.card .cover { display: block; width: 100%; max-height: 220px; object-fit: cover; background: var(--line); }
+.card .body { padding: 14px 16px 12px; display: grid; gap: 8px; }
+.meta-top { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.pill { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; color: #fff; background: var(--navy); }
+.pill.type { background: transparent; color: var(--ink); border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); font-weight: 500; }
+.pill.sample { background: var(--accent); color: var(--accent-ink); }
+.card h3 { margin: 0; font-size: 17px; line-height: 1.35; text-wrap: balance; overflow-wrap: anywhere; }
+.byline { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.byline .mini svg { width: 24px; height: 24px; display: block; }
+.desc { font-size: 14px; margin: 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; overflow-wrap: anywhere; }
+.tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.tag { font-size: 12px; padding: 1px 8px; border-radius: 6px; background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.card-foot { display: flex; gap: 14px; font-size: 13px; color: var(--muted); padding-top: 4px; border-top: 1px dashed color-mix(in srgb, var(--ink) 15%, transparent); }
+.card-foot span { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.card-foot .liked { color: #e0475b; }
+.shelf { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; }
+.col { flex: 0 0 285px; display: grid; gap: 12px; }
+.col-head { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 4px 0; }
+.col-head h3 { font-family: var(--font-display); font-weight: 400; font-size: 20px; margin: 0; }
+.col-head span { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.empty { text-align: center; padding: 50px 20px; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; }
+.empty h3 { font-family: var(--font-display); font-weight: 400; color: var(--ink); margin: 0 0 6px; font-size: 20px; }
+
+footer { color: var(--muted); font-size: 12.5px; padding: 30px 0 50px; }
+
+/* Modal */
+.overlay { position: fixed; inset: 0; background: rgba(10,14,30,.55); display: flex; align-items: flex-start; justify-content: center; padding: 24px 16px; overflow-y: auto; z-index: 50; }
+.modal { background: var(--surface); border-radius: 16px; width: min(720px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.35); overflow: clip; }
+.modal.wide { width: min(980px, 100%); }
+.modal.small { width: min(420px, 100%); }
+.modal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.modal-head h2 { margin: 0; font-size: 18px; }
+.x { border: 0; background: transparent; cursor: pointer; padding: 6px; border-radius: 8px; color: var(--muted); }
+.x:hover { background: var(--bg); }
+.modal-body { padding: 18px 20px 20px; display: grid; gap: 14px; }
+.modal-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--line); flex-wrap: wrap; align-items: center; }
+.modal-foot .grow { flex: 1 1 auto; }
+.field { display: grid; gap: 5px; }
+.field label, .field .lbl { font-size: 13px; font-weight: 600; }
+.hint { font-size: 12px; color: var(--muted); }
+.field input[type=text], .field input[type=url], .field input[type=password], .field select, .field textarea, .inp { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); min-width: 0; }
+.field textarea { min-height: 110px; resize: vertical; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+.link-row { display: grid; grid-template-columns: 150px 1fr auto; gap: 6px; }
+@media (max-width: 560px) { .link-row { grid-template-columns: 1fr; } }
+.links { display: grid; gap: 8px; }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.swatches input { position: absolute; opacity: 0; pointer-events: none; }
+.swatches label { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; display: block; }
+.swatches input:checked + label { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
+.swatches input:focus-visible + label { outline: 3px solid var(--accent); outline-offset: 2px; }
+.req { color: var(--danger); }
+.form-err { color: var(--danger); font-size: 13px; min-height: 1em; }
+.privacy { background: color-mix(in srgb, var(--accent) 14%, transparent); border-radius: 10px; padding: 9px 12px; font-size: 13px; }
+.subject-chip { display: inline-flex; align-items: center; gap: 6px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--muted); }
+
+.drop { border: 2px dashed var(--line); border-radius: 12px; padding: 16px; text-align: center; color: var(--muted); cursor: pointer; }
+.drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.drop b { color: var(--ink); }
+.files { display: grid; gap: 8px; }
+.frow { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.frow .th { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: var(--line); display: grid; place-items: center; color: var(--muted); font-size: 11px; font-weight: 700; }
+.frow .nm { font-size: 14px; overflow-wrap: anywhere; }
+.frow .st { font-size: 12px; color: var(--muted); }
+.frow .st.err { color: var(--danger); }
+.frow .st.ok { color: #1f8a5b; }
+.frow .bt { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.ftotal { font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.ftotal.over { color: var(--danger); font-weight: 600; }
+
+/* Detail */
+.detail-title { font-size: 22px; margin: 0; line-height: 1.3; text-wrap: balance; overflow-wrap: anywhere; }
+.detail-desc { white-space: pre-line; overflow-wrap: anywhere; margin: 0; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.gallery a { display: block; border-radius: 10px; overflow: hidden; background: var(--bg); }
+.gallery img { display: block; width: 100%; height: 150px; object-fit: cover; }
+.pdfbox { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.pdfbox iframe { display: block; width: 100%; height: 520px; border: 0; background: var(--bg); }
+.pdfbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.link-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); text-decoration: none; background: var(--bg); }
+.link-btn:hover { border-color: var(--ink); }
+.link-btn small { color: var(--muted); display: block; overflow-wrap: anywhere; font-size: 12px; }
+.section-lbl { font-size: 13px; font-weight: 700; color: var(--muted); margin: 4px 0 -4px; }
+.comments { display: grid; gap: 10px; }
+.cmt { background: var(--bg); border-radius: 10px; padding: 9px 12px; }
+.cmt-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+.cmt-head b { color: var(--ink); font-size: 13px; }
+.cmt p { margin: 3px 0 0; white-space: pre-line; overflow-wrap: anywhere; }
+.cmt-del { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 12px; padding: 0; }
+.cmt-form { display: grid; grid-template-columns: 120px 1fr auto; gap: 6px; }
+@media (max-width: 560px) { .cmt-form { grid-template-columns: 1fr; } }
+.like-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; font-weight: 600; }
+.like-btn[aria-pressed="true"] { color: #e0475b; border-color: #e0475b; }
+
+/* Avatar maker */
+.maker { display: grid; grid-template-columns: 260px 1fr; gap: 22px; }
+@media (max-width: 760px) { .maker { grid-template-columns: 1fr; } }
+/* 스크롤해도 미리보기가 따라오게: 창(.overlay)이 스크롤될 때 왼쪽에 붙어 있음 */
+.mk-preview { display: grid; gap: 12px; justify-items: center; align-content: start; align-self: start; position: sticky; top: 16px; z-index: 2; }
+.mk-preview #mk-big svg { width: 220px; height: 220px; display: block; }
+@media (max-width: 760px) {
+  .mk-preview { top: -24px; box-shadow: 0 6px 10px -8px rgba(0,0,0,.25); grid-template-columns: auto 1fr; align-items: center; justify-items: start; gap: 12px; background: var(--surface); padding: 8px 0 10px; border-bottom: 1px solid var(--line); margin: 0 -20px; padding-left: 20px; padding-right: 20px; }
+  .mk-preview #mk-big svg { width: 104px; height: 104px; }
+  .mk-btns { flex-direction: column; align-items: stretch; }
+}
+.mk-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.opts { display: grid; gap: 13px; }
+.opt { display: grid; gap: 6px; }
+.opt > span { font-size: 13px; font-weight: 700; }
+.choices { display: flex; gap: 6px; flex-wrap: wrap; }
+.choices .chip { background: var(--bg); color: var(--ink); }
+.choices .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.sw { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; padding: 0; }
+.sw[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--surface) inset; }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.preset { border: 2px solid transparent; background: none; padding: 2px; border-radius: 50%; cursor: pointer; position: relative; }
+.preset svg { width: 46px; height: 46px; display: block; }
+.preset:hover { border-color: var(--line); }
+.preset[aria-pressed="true"] { border-color: var(--ink); }
+.preset.base::after { content: "기본"; position: absolute; left: 50%; bottom: -4px; transform: translateX(-50%); font-size: 11px; font-weight: 700; background: var(--ink); color: var(--bg); padding: 0 6px; border-radius: 999px; white-space: nowrap; line-height: 1.5; }
+.divider { border: 0; border-top: 1px dashed var(--line); margin: 2px 0; }
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 70; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } .card:hover { transform: none; } }
+</style>
+</head>
+<body class="on-cover">
+
+<section class="cover" id="cover" aria-label="STAR 교사단 표지">
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <div class="cover-inner">
+    <div class="constellation" id="constellation"></div>
+    <p class="cover-count" id="cover-count">별자리를 불러오는 중이에요</p>
+    <div class="cover-actions">
+      <button type="button" class="enter" id="enter">입장하기</button>
+      <button type="button" class="cover-ghost" id="cover-avatar">내 별 만들기</button>
+    </div>
+    <p class="cover-note">별을 누르면 그 선생님의 자료로 바로 들어가요</p>
+  </div>
+</section>
+
+<div id="app" hidden>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <button type="button" id="brand-logo" class="logo-btn" aria-label="표지로 돌아가기"><svg width="46" height="46" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="23" fill="var(--accent)"/><path d="M24 9.5l4.3 8.8 9.7 1.4-7 6.8 1.7 9.6L24 31.6l-8.7 4.5 1.7-9.6-7-6.8 9.7-1.4z" fill="var(--navy)"/></svg></button>
+      <div>
+        <h1>STAR 교사단 수업자료 나눔터</h1>
+        <p>AI·디지털 수업을 함께 만들고 나누는 선생님들의 자료 공간</p>
+      </div>
+    </div>
+    <div class="stats" aria-label="현황">
+      <span class="stat"><b id="st-teachers">0</b>선생님</span>
+      <span class="stat"><b id="st-subjects">0</b>교과</span>
+      <span class="stat"><b id="st-posts">0</b>자료</span>
+    </div>
+    <div class="actions">
+      <button class="btn btn-light" id="btn-avatar" type="button">내 캐릭터 만들기</button>
+      <button class="btn btn-primary" id="btn-add" type="button">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        자료 올리기
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="notice" id="notice" hidden><div id="notice-text"></div></div>
+
+  <section id="view-all" aria-label="수업자료">
+    <div class="panel-head filter-banner" id="filter-banner" hidden></div>
+    <div class="toolbar">
+      <div class="row">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <input id="q" type="search" placeholder="제목, 선생님, 도구(예: 캔바, ChatGPT)로 찾기" aria-label="자료 검색">
+        </div>
+        <select id="type-filter" class="select" aria-label="자료 유형"></select>
+        <select id="sort" class="select" aria-label="정렬">
+          <option value="new">최신순</option>
+          <option value="like">좋아요순</option>
+          <option value="title">제목순</option>
+        </select>
+        <div class="seg" role="group" aria-label="보기 방식">
+          <button type="button" id="v-wall" aria-pressed="true">담벼락</button>
+          <button type="button" id="v-shelf" aria-pressed="false">교과별</button>
+        </div>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="교과 필터"></div>
+    </div>
+    <div id="all-board"></div>
+  </section>
+
+  <footer>
+    자료와 첨부 파일은 STAR 교사단 구글 드라이브에 저장돼요. 링크가 있으면 누구나 볼 수 있으니 학생 개인정보가 담긴 자료는 올리지 말아 주세요.
+  </footer>
+</main>
+</div>
+
+<!-- 자료 올리기 / 수정 -->
+<div class="overlay" id="ov-form" hidden>
+  <form class="modal" id="post-form" role="dialog" aria-modal="true" aria-labelledby="form-title" novalidate>
+    <div class="modal-head">
+      <h2 id="form-title">수업자료 올리기</h2>
+      <button class="x" type="button" data-close="ov-form" aria-label="닫기"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="grid2">
+        <div class="field">
+          <label for="f-teacher">선생님 <span class="req">*</span></label>
+          <select id="f-teacher"></select>
+        </div>
+        <div class="field">
+          <span class="lbl">교과</span>
+          <span class="subject-chip" id="f-subject">명단에서 선생님을 고르면 자동으로 채워져요</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-title">자료 제목 <span class="req">*</span></label>
+        <input id="f-title" type="text" maxlength="80" placeholder="예: AI로 만드는 우리 마을 홍보 포스터">
+      </div>
+      <div class="grid3">
+        <div class="field">
+          <label for="f-grade">학년</label>
+          <input id="f-grade" type="text" list="grade-list" maxlength="20" placeholder="예: 2학년">
+          <datalist id="grade-list"></datalist>
+        </div>
+        <div class="field">
+          <label for="f-type">자료 유형</label>
+          <select id="f-type"></select>
+        </div>
+        <div class="field">
+          <label for="f-tools">활용한 도구</label>
+          <input id="f-tools" type="text" maxlength="120" placeholder="쉼표로 구분: 캔바, 패들렛">
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-desc">수업 소개</label>
+        <textarea id="f-desc" maxlength="2000" placeholder="수업 목표, 진행 흐름, 학생 반응, 활용 팁을 적어 주세요."></textarea>
+      </div>
+      <div class="field">
+        <span class="lbl">파일 첨부</span>
+        <span class="hint">사진(JPG·PNG)과 1~3쪽 PDF를 올릴 수 있어요. 큰 파일은 올리기 전에 자동으로 압축돼요. 최대 10개, 합계 25MB.</span>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="파일 고르기">
+          <b>여기를 눌러 파일을 고르거나</b> 파일을 끌어다 놓으세요
+          <input id="f-file" type="file" accept="image/*,application/pdf" multiple hidden>
+        </div>
+        <div class="files" id="file-list"></div>
+        <div class="ftotal" id="file-total"></div>
+      </div>
+      <div class="privacy">학생 얼굴이나 이름이 보이는 사진은 가리거나 보호자 동의를 받은 것만 올려 주세요. 이 페이지는 링크가 있으면 누구나 볼 수 있어요.</div>
+      <div class="field">
+        <span class="lbl">자료 링크</span>
+        <span class="hint">구글 드라이브, 캔바, 슬라이드, 유튜브 등. 25MB가 넘는 자료는 드라이브에 직접 올리고 링크를 붙여 주세요. 최대 5개.</span>
+        <div id="link-rows" class="links"></div>
+        <div><button type="button" class="btn btn-ghost btn-sm" id="add-link">링크 추가</button></div>
+      </div>
+      <div class="field">
+        <span class="lbl" id="color-lbl">카드 색</span>
+        <div class="swatches" role="radiogroup" aria-labelledby="color-lbl" id="swatches"></div>
+      </div>
+      <div class="field" id="code-field">
+        <label for="f-code">교사단 코드 <span class="req">*</span></label>
+        <input id="f-code" type="password" autocomplete="off" placeholder="교사단끼리 공유한 코드">
+        <label class="hint"><input type="checkbox" id="f-remember" checked> 이 기기에서 코드 기억하기</label>
+      </div>
+      <div class="form-err" id="form-err" role="alert"></div>
+    </div>
+    <div class="modal-foot">
+      <span class="hint grow" id="save-status"></span>
+      <button type="button" class="btn btn-ghost" data-close="ov-form">취소</button>
+      <button type="submit" class="btn btn-primary" id="save-btn">올리기</button>
+    </div>
+  </form>
+</div>
+
+<!-- 자료 상세 -->
+<div class="overlay" id="ov-detail" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="d-title">
+    <div class="modal-head">
+      <div class="meta-top" id="d-pills"></div>
+      <button class="x" type="button" data-close="ov-detail" aria-label="닫기"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <h2 class="detail-title" id="d-title"></h2>
+      <div class="byline" id="d-byline"></div>
+      <div class="tags" id="d-tags"></div>
+      <p class="detail-desc" id="d-desc"></p>
+      <div id="d-media" class="links"></div>
+      <div class="section-lbl" id="d-links-lbl">자료 링크</div>
+      <div class="links" id="d-links"></div>
+      <div class="row">
+        <button type="button" class="like-btn" id="d-like" aria-pressed="false">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14s-5.5-3.3-5.5-7.2A3 3 0 018 4.6a3 3 0 015.5 2.2C13.5 10.7 8 14 8 14z" fill="currentColor"/></svg>
+          <span>좋아요 <b id="d-like-n">0</b></span>
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm" id="d-copy">링크 복사</button>
+      </div>
+      <div class="section-lbl">댓글 <span id="d-cmt-n"></span></div>
+      <div class="comments" id="d-comments"></div>
+      <form class="cmt-form" id="cmt-form" novalidate>
+        <input class="inp" id="c-name" type="text" maxlength="20" placeholder="이름" aria-label="댓글 작성자 이름">
+        <input class="inp" id="c-text" type="text" maxlength="300" placeholder="감사 인사나 활용 후기를 남겨 주세요" aria-label="댓글 내용">
+        <button class="btn btn-primary" type="submit">등록</button>
+      </form>
+    </div>
+    <div class="modal-foot" id="d-foot"></div>
+  </div>
+</div>
+
+<!-- 캐릭터 만들기 -->
+<div class="overlay" id="ov-avatar" hidden>
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="mk-title">
+    <div class="modal-head">
+      <h2 id="mk-title">내 캐릭터 만들기</h2>
+      <button class="x" type="button" data-close="ov-avatar" aria-label="닫기"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="grid2">
+        <div class="field">
+          <label for="mk-teacher">내 이름</label>
+          <select id="mk-teacher"></select>
+        </div>
+        <div class="field" id="mk-code-field">
+          <label for="mk-code">교사단 코드</label>
+          <input id="mk-code" type="password" autocomplete="off" placeholder="교사단끼리 공유한 코드">
+        </div>
+      </div>
+      <div class="maker">
+        <div class="mk-preview">
+          <div id="mk-big"></div>
+          <div class="mk-btns">
+            <button class="btn btn-ghost btn-sm" id="mk-rand" type="button">랜덤으로 만들기</button>
+            <button class="btn btn-ghost btn-sm" id="mk-reset" type="button">기본으로</button>
+          </div>
+        </div>
+        <div class="opts">
+          <div class="opt">
+            <span>여기서 시작하기</span>
+            <div class="presets" id="mk-presets" role="group" aria-label="시작 모양"></div>
+          </div>
+          <hr class="divider">
+          <div class="opts" id="mk-opts"></div>
+        </div>
+      </div>
+      <div class="form-err" id="mk-err" role="alert"></div>
+    </div>
+    <div class="modal-foot">
+      <span class="hint grow">저장하면 교사단 지도에 바로 나타나요. 언제든 다시 꾸밀 수 있어요.</span>
+      <button type="button" class="btn btn-ghost" data-close="ov-avatar">취소</button>
+      <button type="button" class="btn btn-primary" id="mk-save">저장하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 교사단 코드 입력 -->
+<div class="overlay" id="ov-code" hidden>
+  <form class="modal small" id="code-form" role="dialog" aria-modal="true" aria-labelledby="code-title" novalidate>
+    <div class="modal-head"><h2 id="code-title">교사단 코드 입력</h2>
+      <button class="x" type="button" data-close="ov-code" aria-label="닫기"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p class="hint" style="margin:0">자료를 고치거나 지우려면 교사단 코드가 필요해요.</p>
+      <input class="inp" id="code-input" type="password" autocomplete="off" aria-label="교사단 코드">
+      <label class="hint"><input type="checkbox" id="code-remember" checked> 이 기기에서 코드 기억하기</label>
+      <div class="form-err" id="code-err" role="alert"></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" data-close="ov-code">취소</button>
+      <button type="submit" class="btn btn-primary">확인</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* ===== StarAvatar: 3D 클레이 느낌 캐릭터 렌더러 (최종 앱에서도 그대로 사용) ===== */
+const StarAvatar = (() => {
+  const SKIN = ["#FFE5D0", "#F8CFAE", "#EDB78F", "#D39A6E", "#A86E48", "#7A4B30"];
+  const HAIR_COLORS = ["#26201E", "#45302A", "#6E4630", "#9A6338", "#C99A5B", "#E8CB7E", "#8E3B24", "#B9B6BD", "#ECEAF0", "#C45A7A", "#4A63C8", "#5E3A7A"];
+  const OUTFIT_COLORS = ["#5B7CFA", "#F2994A", "#34B989", "#E2557B", "#8E6CF0", "#3E4A61", "#F4C542", "#F4F1EA", "#2CA6C9", "#B6443A"];
+  const BG_COLORS = ["#DCE8FF", "#FFE6CF", "#D8F3E6", "#FBDDE8", "#E9E1FF", "#FFF2C2", "#E4E7EE", "#D3F1F6", "#F6E3D3"];
+  const OPTIONS = {
+    face: { round: "동글", oval: "갸름", soft: "각진", wide: "통통" },
+    hair: { short: "기본 컷", side: "옆 가르마", quiff: "올린 머리", buzz: "스포츠", waveShort: "가르마 펌", bob: "단발", waveBob: "웨이브 단발", long: "긴 생머리", waveLong: "굵은 웨이브", pony: "포니테일", bun: "올림머리", pigtails: "양갈래", curly: "곱슬 볼륨", none: "민머리" },
+    fringe: { auto: "기본", straight: "일자 앞머리", seethrough: "시스루 앞머리", side: "옆으로 넘긴 앞머리" },
+    eyes: { dot: "똘망", sparkle: "반짝", smile: "웃는 눈", wink: "윙크", sleepy: "나른한 눈", lashes: "속눈썹" },
+    brows: { soft: "기본", up: "올라간", thick: "진한", worried: "처진" },
+    mouth: { smile: "미소", grin: "활짝", calm: "잔잔", o: "오!", tongue: "메롱", smirk: "씩" },
+    glasses: { none: "없음", round: "동그란 안경", square: "네모 안경", horn: "뿔테", sun: "선글라스" },
+    facial: { none: "없음", mustache: "콧수염", beard: "턱수염", stubble: "수염 자국" },
+    hat: { none: "없음", headband: "머리띠", beanie: "비니", cap: "야구모자", pin: "별 핀", flower: "꽃 핀" },
+    outfit: { tee: "티셔츠", shirt: "셔츠", blazer: "정장", cardi: "가디건", hoodie: "후드티", track: "체육복", labcoat: "실험 가운", apron: "앞치마" },
+    badge: { none: "없음", "과학": "과학", "수학": "수학", "국어": "국어", "영어": "영어", "역사": "역사", "음악": "음악", "미술": "미술", "체육": "체육", "가정": "가정" },
+  };
+  const DEFAULT = { face: "round", skin: 1, hair: "short", fringe: "auto", hairColor: 0, eyes: "dot", brows: "soft", mouth: "smile", glasses: "none", facial: "none", hat: "none", hatColor: 3, blush: true, freckles: false, outfit: "tee", outfitColor: 0, bg: 0, badge: "none" };
+  const NUM = { skin: SKIN, hairColor: HAIR_COLORS, outfitColor: OUTFIT_COLORS, hatColor: OUTFIT_COLORS, bg: BG_COLORS };
+
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+  const hex2rgb = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const rgb2hex = (r) => "#" + r.map(v => clamp(Math.round(v), 0, 255).toString(16).padStart(2, "0")).join("");
+  const mix = (a, b, t) => { const x = hex2rgb(a), y = hex2rgb(b); return rgb2hex(x.map((v, i) => v + (y[i] - v) * t)); };
+  const light = (h, t) => mix(h, "#ffffff", t);
+  const dark = (h, t) => mix(h, "#000000", t);
+
+  function normalize(o) {
+    const x = Object.assign({}, DEFAULT, o || {});
+    for (const k of Object.keys(OPTIONS)) if (!(x[k] in OPTIONS[k])) x[k] = DEFAULT[k];
+    for (const [k, arr] of Object.entries(NUM)) { const n = parseInt(x[k], 10); x[k] = Number.isFinite(n) ? clamp(n, 0, arr.length - 1) : DEFAULT[k]; }
+    x.blush = x.blush !== false;
+    x.freckles = x.freckles === true;
+    return x;
+  }
+
+  const HEADS = {
+    round: { rx: 47, ry: 48, cy: 94 },
+    oval: { rx: 43, ry: 51, cy: 93 },
+    soft: { rx: 45, ry: 48, cy: 94 },
+    wide: { rx: 50, ry: 46, cy: 95 },
+  };
+
+  let uid = 0;
+  const radial = (id, c0, c1, c2, cx = 0.38, cy = 0.3, r = 0.78) =>
+    `<radialGradient id="${id}" cx="${cx}" cy="${cy}" r="${r}"><stop offset="0" stop-color="${c0}"/><stop offset="0.58" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></radialGradient>`;
+
+  /* 교과 배지 아이콘: Tabler Icons (MIT, tabler.io) 외곽선 아이콘 경로 */
+  const BADGE_ICONS = {
+    "과학": ["M9 3l6 0", "M10 9l4 0", "M10 3v6l-4 11a.7 .7 0 0 0 .5 1h11a.7 .7 0 0 0 .5 -1l-4 -11v-6"],
+    "수학": ["M3 12l18 0", "M12 3l0 18", "M16.5 4.5l3 3", "M19.5 4.5l-3 3", "M6 4l0 4", "M4 6l4 0", "M18 16l.01 0", "M18 20l.01 0", "M4 18l4 0"],
+    "국어": ["M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0", "M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0", "M3 6l0 13", "M12 6l0 13", "M21 6l0 13"],
+    "영어": ["M3 16v-6a2 2 0 1 1 4 0v6", "M3 13h4", "M10 8v6a2 2 0 1 0 4 0v-1a2 2 0 1 0 -4 0v1", "M20.732 12a2 2 0 0 0 -3.732 1v1a2 2 0 0 0 3.726 1.01"],
+    "역사": ["M8 18l2 -13l2 -2l2 2l2 13", "M5 21v-3h14v3", "M3 21l18 0"],
+    "음악": ["M3 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0", "M13 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0", "M9 17v-13h10v13", "M9 8h10"],
+    "미술": ["M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8c0 1.06 -.474 2.078 -1.318 2.828c-.844 .75 -1.989 1.172 -3.182 1.172h-2.5a2 2 0 0 0 -1 3.75a1.3 1.3 0 0 1 -1 2.25", "M8.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0", "M12.5 7.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0", "M16.5 10.5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"],
+    "체육": ["M13 4m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0", "M4 17l5 1l.75 -1.5", "M15 21l0 -4l-4 -3l1 -6", "M7 12l0 -3l5 -1l3 3l3 1"],
+    "가정": ["M12 3c1.918 0 3.52 1.35 3.91 3.151a4 4 0 0 1 2.09 7.723l0 7.126h-12v-7.126a4 4 0 1 1 2.092 -7.723a4 4 0 0 1 3.908 -3.151z", "M6.161 17.009l11.839 -.009"],
+  };
+  function badgeIcon(subject, ink) {
+    const paths = BADGE_ICONS[subject];
+    if (!paths) return "";
+    return `<g transform="translate(-11 -11) scale(.9167)" fill="none" stroke="${ink}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">${paths.map(d => `<path d="${d}"/>`).join("")}</g>`;
+  }
+
+  /* 머리: 얼굴 타원 기준 좌표(f: 가로 -1~1, g: 세로 -1~1)로 그려서 어떤 얼굴형에도 딱 맞게 감싼다 */
+  function hairParts(o, H, p, HR, hairCol) {
+    const HC = `url(#${p}hc)`, HU = `url(#${p}hu)`;
+    const { rx, ry, cy } = H;
+    const X = (f) => (100 + f * rx).toFixed(1);
+    const Y = (g) => (cy + g * ry).toFixed(1);
+    const P = (f, g) => `${X(f)} ${Y(g)}`;
+    const hairE = (dx = 5, dy = 5, oy = -3) => `<ellipse cx="100" cy="${(cy + oy).toFixed(1)}" rx="${rx + dx}" ry="${ry + dy}"/>`;
+
+    const M = {
+      short: `M0 0H200V${Y(.06)}H${X(.99)}C${P(.94, -.24)} ${P(.84, -.56)} ${P(.6, -.64)}C${P(.25, -.54)} ${P(-.25, -.54)} ${P(-.6, -.64)}C${P(-.84, -.56)} ${P(-.94, -.24)} ${P(-.99, .06)}H0Z`,
+      side: `M0 0H200V${Y(.06)}H${X(.99)}C${P(.94, -.28)} ${P(.86, -.62)} ${P(.62, -.72)}C${P(.3, -.52)} ${P(-.25, -.34)} ${P(-.66, -.4)}C${P(-.86, -.4)} ${P(-.95, -.2)} ${P(-.99, .06)}H0Z`,
+      quiff: `M0 0H200V${Y(.04)}H${X(.99)}C${P(.94, -.3)} ${P(.84, -.62)} ${P(.6, -.7)}C${P(.25, -.62)} ${P(-.25, -.62)} ${P(-.6, -.7)}C${P(-.84, -.62)} ${P(-.94, -.3)} ${P(-.99, .04)}H0Z`,
+      buzz: `M0 0H200V${Y(-.06)}H${X(.97)}C${P(.95, -.38)} ${P(.84, -.6)} ${P(.6, -.68)}C${P(.25, -.62)} ${P(-.25, -.62)} ${P(-.6, -.68)}C${P(-.84, -.6)} ${P(-.95, -.38)} ${P(-.97, -.06)}H0Z`,
+      slick: `M0 0H200V${Y(.04)}H${X(.99)}C${P(.93, -.34)} ${P(.78, -.66)} ${P(.5, -.72)}C${P(.2, -.76)} ${P(-.2, -.76)} ${P(-.5, -.72)}C${P(-.78, -.66)} ${P(-.93, -.34)} ${P(-.99, .04)}H0Z`,
+      bangs: `M0 0H200V200H${X(.8)}C${P(.9, .5)} ${P(.95, 0)} ${P(.9, -.3)}C${P(.5, -.22)} ${P(-.5, -.22)} ${P(-.9, -.3)}C${P(-.95, 0)} ${P(-.9, .5)} ${X(-.8)} 200H0Z`,
+      bobside: `M0 0H200V200H${X(.8)}C${P(.9, .5)} ${P(.95, 0)} ${P(.92, -.36)}C${P(.82, -.64)} ${P(.52, -.74)} ${P(.32, -.64)}C${P(0, -.5)} ${P(-.42, -.38)} ${P(-.88, -.3)}C${P(-.95, 0)} ${P(-.9, .5)} ${X(-.8)} 200H0Z`,
+      long: `M0 0H200V200H${X(.66)}C${P(.86, 1)} ${P(.92, .3)} ${P(.9, -.2)}C${P(.86, -.5)} ${P(.4, -.6)} ${P(0, -.86)}C${P(-.4, -.6)} ${P(-.86, -.5)} ${P(-.9, -.2)}C${P(-.92, .3)} ${P(-.86, 1)} ${X(-.66)} 200H0Z`,
+      longside: `M0 0H200V200H${X(.66)}C${P(.86, 1)} ${P(.92, .3)} ${P(.92, -.36)}C${P(.82, -.64)} ${P(.52, -.74)} ${P(.32, -.64)}C${P(0, -.5)} ${P(-.42, -.38)} ${P(-.88, -.3)}C${P(-.92, .3)} ${P(-.86, 1)} ${X(-.66)} 200H0Z`,
+    };
+    // 곱슬 앞머리: 이마에 동글동글한 컬이 내려온 선
+    const curlLine = (depth) => {
+      const gAt = (f) => -.5 + .22 * f * f;
+      let d = `M0 0H200V${Y(.45)}H${X(.95)}L${P(.9, gAt(.9))}`;
+      const n = 6;
+      for (let i = 0; i < n; i++) {
+        const f0 = .9 - 1.8 * i / n, f1 = .9 - 1.8 * (i + 1) / n, fm = (f0 + f1) / 2;
+        d += `Q${P(fm, gAt(fm) + depth)} ${P(f1, gAt(f1))}`;
+      }
+      return d + `L${P(-.95, .45)}H0Z`;
+    };
+
+    const bobShape = `<path d="M${P(-1.1, -.1)}C${P(-1.15, .4)} ${P(-1.13, .75)} ${P(-1.0, .9)}C${P(-.6, 1.0)} ${P(.6, 1.0)} ${P(1.0, .9)}C${P(1.13, .75)} ${P(1.15, .4)} ${P(1.1, -.1)}Z"/>`;
+    const longBack = `<path d="M${P(-1.1, -.1)}C${P(-1.2, .6)} ${P(-1.18, 1.3)} ${X(-1.06)} 200L${X(1.06)} 200C${P(1.18, 1.3)} ${P(1.2, .6)} ${P(1.1, -.1)}Z"/>`;
+    const strands = `<path d="M${P(-1.1, -.1)}C${P(-1.17, .6)} ${P(-1.15, 1.2)} ${X(-1.04)} 200L${X(-.62)} 200C${P(-.8, 1.1)} ${P(-.86, .6)} ${P(-.86, 0)}Z"/><path d="M${P(1.1, -.1)}C${P(1.17, .6)} ${P(1.15, 1.2)} ${X(1.04)} 200L${X(.62)} 200C${P(.8, 1.1)} ${P(.86, .6)} ${P(.86, 0)}Z"/>`;
+    const ring = (n, a0, a1, kx, ky, oy, r, fill = HR) => {
+      let s = "";
+      for (let i = 0; i <= n; i++) {
+        const a = (a0 + (a1 - a0) * i / n) * Math.PI / 180;
+        s += `<circle cx="${(100 + Math.cos(a) * (rx + kx)).toFixed(1)}" cy="${(cy + oy + Math.sin(a) * (ry + ky)).toFixed(1)}" r="${r}" fill="${fill}"/>`;
+      }
+      return s;
+    };
+    const grid = (r, step, gMax) => {
+      let s = "";
+      for (let y = cy - ry - 10, row = 0; y < cy + gMax * ry; y += step, row++) {
+        for (let x = 100 - rx - 14 + (row % 2) * step / 2; x < 100 + rx + 14; x += step) s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${HC}"/>`;
+      }
+      return s;
+    };
+    const strandLines = (lines) => `<g fill="none" stroke="${light(hairCol, .35)}" stroke-width="1.6" stroke-linecap="round" opacity=".22">${lines.map(l => `<path d="${l}"/>`).join("")}</g>`;
+
+    // 물결 선: (x0,y0)에서 (x1,y1)까지 n번 출렁이는 Q 곡선 조각
+    const wave = (x0, y0, x1, y1, n, amp, sign = 1) => {
+      let d = "";
+      for (let i = 0; i < n; i++) {
+        const t0 = i / n, t1 = (i + 1) / n, tm = (t0 + t1) / 2;
+        const mx = x0 + (x1 - x0) * tm, my = y0 + (y1 - y0) * tm;
+        const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1;
+        const k = (i % 2 ? -1 : 1) * sign * amp;
+        d += `Q${(mx + (-dy / len) * k).toFixed(1)} ${(my + (dx / len) * k).toFixed(1)} ${(x0 + dx * t1).toFixed(1)} ${(y0 + dy * t1).toFixed(1)}`;
+      }
+      return d;
+    };
+    const XN = (f) => 100 + f * rx, YN = (g) => cy + g * ry;
+    const waveStroke = (x0, y0, x1, y1, n, amp, sign, col, w, op) => `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}${wave(x0, y0, x1, y1, n, amp, sign)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" opacity="${op}"/>`;
+    const hiC = light(hairCol, .45), loC = dark(hairCol, .35);
+    let back = "", volume = hairE(), mask = M.short, texture = "", texIn = "", extra = "";
+    switch (o.hair) {
+      case "short":
+        texture = strandLines([`M${P(.1, -1.02)}C${P(-.2, -.9)} ${P(-.45, -.78)} ${P(-.62, -.66)}`, `M${P(.15, -1.02)}C${P(.4, -.9)} ${P(.6, -.78)} ${P(.7, -.62)}`]);
+        break;
+      case "side":
+        mask = M.side;
+        texture = strandLines([`M${P(.45, -1.04)}C${P(.52, -.92)} ${P(.58, -.82)} ${P(.62, -.72)}`, `M${P(.38, -1.02)}C${P(.1, -.8)} ${P(-.3, -.56)} ${P(-.62, -.44)}`, `M${P(.32, -.98)}C${P(0, -.74)} ${P(-.4, -.6)} ${P(-.8, -.5)}`]);
+        break;
+      case "quiff":
+        mask = M.quiff; volume = hairE(5, 13, -11) + hairE();
+        texture = strandLines([`M${P(-.5, -.78)}C${P(-.3, -1.1)} ${P(.1, -1.22)} ${P(.4, -1.12)}`, `M${P(-.2, -.74)}C${P(0, -1.0)} ${P(.3, -1.1)} ${P(.6, -.98)}`]);
+        break;
+      case "buzz":
+        mask = M.buzz; volume = hairE(2, 2, -1);
+        break;
+      case "waveShort":
+        mask = M.side; volume = hairE(6, 8, -5);
+        texIn = [[-.5, -.92], [.05, -1.06], [.56, -.94], [-.85, -.55], [.88, -.5]].map(([f, g]) => `<circle cx="${XN(f).toFixed(1)}" cy="${YN(g).toFixed(1)}" r="${(rx * .42).toFixed(1)}" fill="${HC}"/>`).join("");
+        texture = waveStroke(XN(.45), YN(-1.08), XN(-.75), YN(-.42), 3, 5, 1, hiC, 2.4, .32) + waveStroke(XN(.6), YN(-.95), XN(-.3), YN(-.4), 3, 4, 1, loC, 1.6, .16) + waveStroke(XN(.2), YN(-1.12), XN(-.95), YN(-.6), 3, 5, 1, hiC, 2, .22);
+        break;
+      case "bob":
+        mask = M.bobside; back = `<g>${hairE()}${bobShape}</g>`; volume = hairE() + bobShape;
+        texture = strandLines([`M${P(.3, -1.0)}C${P(-.2, -.8)} ${P(-.9, -.5)} ${P(-1.0, .6)}`, `M${P(.36, -1.0)}C${P(.8, -.8)} ${P(1.0, -.3)} ${P(1.02, .6)}`]);
+        break;
+      case "waveBob": {
+        const L0 = [XN(-1.1), YN(-.1)], L1 = [XN(-1.1), YN(.82)], R1 = [XN(1.1), YN(.82)], R0 = [XN(1.1), YN(-.1)];
+        const shape = `<path d="M${L0[0]} ${L0[1]}${wave(L0[0], L0[1], L1[0], L1[1], 3, 6, 1)}Q${P(-1.24, 1.06)} ${P(-.92, 1.0)}C${P(-.5, 1.08)} ${P(.5, 1.08)} ${P(.92, 1.0)}Q${P(1.24, 1.06)} ${R1[0]} ${R1[1]}${wave(R1[0], R1[1], R0[0], R0[1], 3, 6, 1)}Z"/>`;
+        mask = M.bobside; back = `<g>${hairE(6, 6, -3)}${shape}</g>`; volume = hairE(6, 6, -3) + shape;
+        texture = waveStroke(XN(-.95), YN(-.35), XN(-1.02), YN(.9), 3, 6, 1, hiC, 2.6, .32) + waveStroke(XN(-.88), YN(-.2), XN(-.92), YN(.88), 3, 5, 1, loC, 1.8, .28) +
+          waveStroke(XN(.95), YN(-.35), XN(1.02), YN(.9), 3, 6, -1, hiC, 2.6, .32) + waveStroke(XN(.88), YN(-.2), XN(.92), YN(.88), 3, 5, -1, loC, 1.8, .28) +
+          waveStroke(XN(.3), YN(-1.04), XN(-.8), YN(-.5), 2, 5, 1, hiC, 2.2, .25);
+        break;
+      }
+      case "curly": {
+        // 한 덩어리 구름처럼: 원들을 같은 조명(공간 기준 그라데이션)으로 칠해 경계 없이 뭉실하게
+        mask = curlLine(.12); volume = hairE(13, 11, -6);
+        back = `<g fill="${HU}">${hairE(13, 11, -6)}${ring(16, 150, 390, 12, 9, -2, 15, HU)}</g>`;
+        texture = `<g>${ring(13, 190, 350, 12, 10, -6, 14, HU)}</g>`;
+        let curls = "";
+        for (let yy = cy - ry - 4, row = 0; yy < cy - ry * .3; yy += 18, row++) {
+          for (let xx = 100 - rx + 2 + (row % 2) * 10; xx < 100 + rx; xx += 20) {
+            curls += `<path d="M${(xx - 4).toFixed(1)} ${(yy + 2).toFixed(1)}a5 5 0 1 1 5 5" fill="none" stroke="${hiC}" stroke-width="2" stroke-linecap="round" opacity=".24"/>`;
+          }
+        }
+        texIn = curls; volume = `<g fill="${HU}">${volume}</g>`;
+        break;
+      }
+      case "long":
+        mask = M.long; back = `<g>${hairE()}${longBack}</g>`; volume = hairE() + strands;
+        texture = strandLines([`M${P(0, -.86)}C${P(-.4, -.6)} ${P(-.86, -.4)} ${P(-.96, .4)}`, `M${P(0, -.86)}C${P(.4, -.6)} ${P(.86, -.4)} ${P(.96, .4)}`, `M${P(-.98, .2)}C${P(-1.0, .7)} ${P(-.96, 1.1)} ${X(-.9)} 200`, `M${P(.98, .2)}C${P(1.0, .7)} ${P(.96, 1.1)} ${X(.9)} 200`]);
+        break;
+      case "waveLong": {
+        const lb = `<path d="M${XN(-1.12)} ${YN(-.1)}${wave(XN(-1.12), YN(-.1), XN(-1.14), 206, 5, 7, 1)}L${XN(1.14)} 206${wave(XN(1.14), 206, XN(1.12), YN(-.1), 5, 7, 1)}Z"/>`;
+        const sl = `<path d="M${XN(-1.12)} ${YN(-.1)}${wave(XN(-1.12), YN(-.1), XN(-1.14), 206, 5, 7, 1)}L${XN(-.6)} 206${wave(XN(-.6), 206, XN(-.86), YN(0), 4, 6, 1)}Z"/>`;
+        const sr = `<path d="M${XN(1.12)} ${YN(-.1)}${wave(XN(1.12), YN(-.1), XN(1.14), 206, 5, 7, -1)}L${XN(.6)} 206${wave(XN(.6), 206, XN(.86), YN(0), 4, 6, -1)}Z"/>`;
+        mask = M.long; back = `<g>${hairE(6, 6, -3)}${lb}</g>`; volume = hairE(6, 6, -3) + sl + sr;
+        texture = waveStroke(XN(-.98), YN(.05), XN(-.92), 204, 5, 6, 1, hiC, 3, .3) + waveStroke(XN(-.9), YN(.15), XN(-.78), 204, 5, 5, 1, loC, 2, .26) +
+          waveStroke(XN(.98), YN(.05), XN(.92), 204, 5, 6, -1, hiC, 3, .3) + waveStroke(XN(.9), YN(.15), XN(.78), 204, 5, 5, -1, loC, 2, .26) +
+          waveStroke(XN(0), YN(-.86), XN(-.9), YN(-.15), 2, 5, 1, hiC, 2.2, .25) + waveStroke(XN(0), YN(-.86), XN(.9), YN(-.15), 2, 5, -1, hiC, 2.2, .25);
+        break;
+      }
+      case "pony":
+        mask = M.slick; volume = hairE(3, 3, -2);
+        back = `<path d="M${P(.3, -1.0)}C${P(1.2, -1.2)} ${P(1.62, -.1)} ${P(1.4, .7)}C${P(1.32, .98)} ${P(1.1, 1.0)} ${P(1.1, .78)}C${P(1.24, .2)} ${P(1.06, -.4)} ${P(.4, -.66)}Z" fill="${HR}"/>`;
+        extra = `<ellipse cx="${X(.86)}" cy="${Y(-.78)}" rx="5" ry="6.5" transform="rotate(35 ${X(.86)} ${Y(-.78)})" fill="#E2557B"/>`;
+        texture = strandLines([`M${P(-.6, -.66)}C${P(-.2, -.98)} ${P(.3, -1.0)} ${P(.84, -.78)}`, `M${P(-.2, -.74)}C${P(.1, -.95)} ${P(.4, -.94)} ${P(.84, -.78)}`]);
+        break;
+      case "bun":
+        mask = M.slick; volume = hairE(3, 3, -2);
+        back = `<circle cx="100" cy="${Y(-1.1)}" r="${(rx * .4).toFixed(1)}" fill="${HR}"/>`;
+        extra = `<path d="M${X(-.3)} ${Y(-.98)}Q100 ${Y(-.9)} ${X(.3)} ${Y(-.98)}" fill="none" stroke="${dark(hairCol, .4)}" stroke-width="3" stroke-linecap="round" opacity=".6"/>`;
+        texture = strandLines([`M${P(-.6, -.66)}C${P(-.4, -.9)} ${P(-.2, -.98)} 100 ${Y(-1.0)}`, `M${P(.6, -.66)}C${P(.4, -.9)} ${P(.2, -.98)} 100 ${Y(-1.0)}`]);
+        break;
+      case "pigtails":
+        mask = M.slick; volume = hairE(3, 3, -2);
+        back = `<path d="M${P(-.95, -.34)}C${P(-1.62, -.3)} ${P(-1.66, .8)} ${P(-1.24, 1.08)}C${P(-1.02, .96)} ${P(-1.0, .2)} ${P(-.88, -.04)}Z" fill="${HR}"/><path d="M${P(.95, -.34)}C${P(1.62, -.3)} ${P(1.66, .8)} ${P(1.24, 1.08)}C${P(1.02, .96)} ${P(1.0, .2)} ${P(.88, -.04)}Z" fill="${HR}"/>`;
+        extra = `<circle cx="${X(-1.02)}" cy="${Y(-.2)}" r="5" fill="#F4C542"/><circle cx="${X(1.02)}" cy="${Y(-.2)}" r="5" fill="#F4C542"/>`;
+        texture = strandLines([`M${P(0, -1.02)}L${P(0, -.76)}`]);
+        break;
+      case "none":
+        return { back: "", front: "", defs: "" };
+    }
+    // 앞머리: 어떤 헤어스타일 위에도 얹을 수 있게 별도 레이어
+    let fringe = "";
+    if (o.fringe !== "auto" && o.hair !== "buzz") {
+      const top = `M${P(-.95, -.08)}C${P(-1.02, -.9)} ${P(-.55, -1.08)} 100 ${Y(-1.08)}C${P(.55, -1.08)} ${P(1.02, -.9)} ${P(.95, -.08)}`;
+      if (o.fringe === "straight") {
+        let d = top + `L${P(.9, -.27)}`;
+        const n = 7; for (let i = 0; i < n; i++) { const f0 = .9 - 1.8 * i / n, f1 = .9 - 1.8 * (i + 1) / n; d += `Q${P((f0 + f1) / 2, -.22)} ${P(f1, -.28)}`; }
+        fringe = `<path d="${d}L${P(-.95, -.08)}Z" fill="${HR}"/>` + strandLines([-.6, -.3, 0, .3, .6].map(f => `M${P(f * .9, -.85)}L${P(f, -.32)}`));
+      } else if (o.fringe === "seethrough") {
+        let d = top + `L${P(.9, -.5)}`;
+        const n = 6; for (let i = 0; i < n; i++) { const f0 = .9 - 1.8 * i / n, f1 = .9 - 1.8 * (i + 1) / n, fm = (f0 + f1) / 2; d += `Q${P(f0 - .03, -.32)} ${P(fm, -.28)}Q${P(f1 + .03, -.32)} ${P(f1, -.52)}`; }
+        fringe = `<path d="${d}L${P(-.95, -.08)}Z" fill="${HR}" opacity=".96"/>` + strandLines([-.75, -.45, -.15, .15, .45, .75].map(f => `M${P(f * .9, -.85)}L${P(f, -.34)}`));
+      } else if (o.fringe === "side") {
+        fringe = `<path d="M${P(-.96, -.06)}C${P(-1.02, -.9)} ${P(-.55, -1.08)} 100 ${Y(-1.08)}C${P(.6, -1.08)} ${P(1.0, -.86)} ${P(.95, -.4)}C${P(.6, -.68)} ${P(.1, -.5)} ${P(-.3, -.32)}C${P(-.6, -.2)} ${P(-.84, -.16)} ${P(-.96, -.06)}Z" fill="${HR}"/>` +
+          strandLines([`M${P(.7, -.9)}C${P(.3, -.7)} ${P(-.2, -.45)} ${P(-.7, -.24)}`, `M${P(.85, -.7)}C${P(.4, -.6)} ${P(0, -.42)} ${P(-.5, -.26)}`]);
+      }
+    }
+    const shine = `<ellipse cx="${X(-.32)}" cy="${Y(-.84)}" rx="${(rx * .36).toFixed(1)}" ry="6" transform="rotate(-14 ${X(-.32)} ${Y(-.84)})" fill="#fff" opacity=".28" filter="url(#${p}blur)"/>`;
+    const defs = `<clipPath id="${p}hm"><path d="${mask}"/></clipPath><clipPath id="${p}hv">${volume}</clipPath>`;
+    const backOut = back ? `<g fill="${HR}">${back}</g>` : "";
+    const front = `<g filter="url(#${p}sh)"><g clip-path="url(#${p}hm)"><g fill="${HR}">${volume}</g>${texIn ? `<g clip-path="url(#${p}hv)">${texIn}</g>` : ""}${texture}${shine}</g>${extra}</g>${fringe ? `<g filter="url(#${p}sh)">${fringe}</g>` : ""}`;
+    return { back: backOut, front, defs };
+  }
+
+  function svg(input, opts = {}) {
+    const o = normalize(input);
+    const p = "sa" + (++uid) + "-";
+    const skin = SKIN[o.skin], hairCol = HAIR_COLORS[o.hairColor], cloth = OUTFIT_COLORS[o.outfitColor], hatCol = OUTFIT_COLORS[o.hatColor], bg = BG_COLORS[o.bg];
+    const ink = "#2A2230";
+    const H = HEADS[o.face];
+    const { rx, ry, cy } = H;
+    const X = (f) => (100 + f * rx).toFixed(1);
+    const Y = (g) => (cy + g * ry).toFixed(1);
+    const P = (f, g) => `${X(f)} ${Y(g)}`;
+    const eyeY = cy + 5, noseY = cy + 15, mY = cy + 25, eyeL = 82, eyeR = 118;
+    const neckCol = dark(skin, .1);
+
+    const HR = `url(#${p}hr)`, SK = `url(#${p}sk)`, CL = `url(#${p}cl)`;
+    const hair = hairParts(o, H, p, HR, hairCol);
+
+    const defs = [
+      radial(p + "bg", light(bg, .45), bg, dark(bg, .06), .5, .35),
+      radial(p + "sk", light(skin, .3), skin, dark(skin, .2)),
+      radial(p + "hr", light(hairCol, .3), hairCol, dark(hairCol, .4), .35, .22),
+      radial(p + "hc", light(hairCol, .18), hairCol, dark(hairCol, .12), .4, .3, .75),
+      `<radialGradient id="${p}hu" gradientUnits="userSpaceOnUse" cx="${(100 - rx * .35).toFixed(1)}" cy="${(cy - ry * .95).toFixed(1)}" r="${(rx * 1.75).toFixed(1)}"><stop offset="0" stop-color="${light(hairCol, .32)}"/><stop offset=".5" stop-color="${hairCol}"/><stop offset="1" stop-color="${dark(hairCol, .38)}"/></radialGradient>`,
+      radial(p + "cl", light(cloth, .28), cloth, dark(cloth, .3), .38, .1, .9),
+      radial(p + "lc", "#ffffff", "#F4F5F8", "#D5D9E1", .38, .1, .9),
+      radial(p + "ht", light(hatCol, .3), hatCol, dark(hatCol, .3), .35, .2),
+      radial(p + "bd", "#ffffff", light(cloth, .7), light(cloth, .35), .35, .3),
+      `<clipPath id="${p}clip"><circle cx="100" cy="100" r="100"/></clipPath>`,
+      `<clipPath id="${p}nk"><rect x="86" y="${cy + 18}" width="28" height="60"/></clipPath>`,
+      `<filter id="${p}blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.2"/></filter>`,
+      `<filter id="${p}sh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="2.5" stdDeviation="2.6" flood-color="#1b1430" flood-opacity=".22"/></filter>`,
+      hair.defs,
+    ].join("");
+
+    /* ---- 목 + 몸: 목과 옷의 목둘레를 같은 색으로 이어서 끊김 없이 ---- */
+    const neck = `<path d="M86 ${cy + 22}H114V166H86Z" fill="${neckCol}"/><g clip-path="url(#${p}nk)"><ellipse cx="100" cy="${cy + ry - 1}" rx="19" ry="8" fill="#1b1430" opacity=".28" filter="url(#${p}blur)"/></g>`;
+    const bodyPath = `M22 212C24 182 44 163 80 155C88 153 112 153 120 155C156 163 176 182 178 212Z`;
+    const dk = dark(cloth, .28);
+    const uNeck = (w = 14, d = 18) => `<path d="M${100 - w} 149C${100 - w + 2} ${152 + d} ${100 + w - 2} ${152 + d} ${100 + w} 149Z" fill="${neckCol}"/>`;
+    const neckShade = "";
+    let outfit = "";
+    switch (o.outfit) {
+      case "tee":
+        outfit = `<path d="${bodyPath}" fill="${CL}"/>${uNeck()}${neckShade}<path d="M84 154C87 172 113 172 116 154" fill="none" stroke="${dk}" stroke-width="3.5" stroke-linecap="round"/>`;
+        break;
+      case "shirt":
+        outfit = `<path d="${bodyPath}" fill="${CL}"/><path d="M86 149L100 172L114 149Z" fill="${neckCol}"/>${neckShade}` +
+          `<path d="M86 145L100 172L91 181L76 159Z" fill="#FBFAF7" stroke="#D9D5CC" stroke-width="1"/><path d="M114 145L100 172L109 181L124 159Z" fill="#FBFAF7" stroke="#D9D5CC" stroke-width="1"/>` +
+          `<circle cx="100" cy="186" r="2" fill="${dark(cloth, .35)}"/><circle cx="100" cy="199" r="2" fill="${dark(cloth, .35)}"/>`;
+        break;
+      case "blazer": {
+        const tie = o.outfitColor === 9 ? "#2F3B66" : "#B6443A";
+        outfit = `<path d="${bodyPath}" fill="${CL}"/><path d="M80 154L100 210L120 154Z" fill="#FBFAF7"/><path d="M86 149L100 170L114 149Z" fill="${neckCol}"/>${neckShade}` +
+          `<path d="M86 146L100 170L92 173L81 157Z" fill="#FBFAF7" stroke="#D9D5CC" stroke-width="1"/><path d="M114 146L100 170L108 173L119 157Z" fill="#FBFAF7" stroke="#D9D5CC" stroke-width="1"/>` +
+          `<path d="M96 170H104L102.6 176H97.4Z" fill="${dark(tie, .15)}"/><path d="M97.4 176H102.6L105.5 199L100 206L94.5 199Z" fill="${tie}"/>` +
+          `<path d="M80 154L98 204L90 206L70 170L82 160Z" fill="${dark(cloth, .14)}" stroke="${dark(cloth, .32)}" stroke-width="1"/><path d="M120 154L102 204L110 206L130 170L118 160Z" fill="${dark(cloth, .14)}" stroke="${dark(cloth, .32)}" stroke-width="1"/>`;
+        break;
+      }
+      case "cardi":
+        outfit = `<path d="${bodyPath}" fill="${CL}"/><path d="M82 154L100 210L118 154Z" fill="#F7F4EE"/>${uNeck(12, 13)}${neckShade}<path d="M87 154C90 168 110 168 113 154" fill="none" stroke="#DDD8CE" stroke-width="2.5"/>` +
+          `<path d="M82 154L100 210M118 154L100 210" stroke="${dark(cloth, .3)}" stroke-width="2.5" fill="none"/><circle cx="93" cy="184" r="2.2" fill="${dark(cloth, .38)}"/><circle cx="96.5" cy="197" r="2.2" fill="${dark(cloth, .38)}"/>`;
+        break;
+      case "hoodie":
+        outfit = `<path d="${bodyPath}" fill="${CL}"/><path d="M70 160C68 146 84 141 100 142C116 141 132 146 130 160C126 182 74 182 70 160Z" fill="${dark(cloth, .1)}"/><path d="M76 160C77 174 123 174 124 160" fill="none" stroke="${dark(cloth, .25)}" stroke-width="1.5" opacity=".6"/>${uNeck(14, 14)}${neckShade}` +
+          `<path d="M92 174L91 194M108 174L109 194" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/><circle cx="91" cy="195" r="2.4" fill="#ffffff"/><circle cx="109" cy="195" r="2.4" fill="#ffffff"/>`;
+        break;
+      case "track":
+        outfit = `<path d="${bodyPath}" fill="${CL}"/><path d="M36 196C44 175 60 163 80 157M164 196C156 175 140 163 120 157" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" opacity=".92"/>` +
+          `<path d="M85 148H115L118 159C108 164 92 164 82 159Z" fill="${dark(cloth, .16)}"/><path d="M100 161V212" stroke="#ffffff" stroke-width="2" opacity=".9"/><rect x="97.5" y="163" width="5" height="9" rx="1.5" fill="#ffffff"/>`;
+        break;
+      case "labcoat":
+        outfit = `<path d="${bodyPath}" fill="url(#${p}lc)"/><path d="M82 154L100 206L118 154Z" fill="${CL}"/>${uNeck(12, 13)}${neckShade}` +
+          `<path d="M82 154L100 206L93 208L71 168Z" fill="#ffffff" stroke="#C6CBD4" stroke-width="1"/><path d="M118 154L100 206L107 208L129 168Z" fill="#ffffff" stroke="#C6CBD4" stroke-width="1"/>` +
+          `<rect x="124" y="183" width="22" height="15" rx="2" fill="none" stroke="#C6CBD4" stroke-width="1.2"/><rect x="128" y="176" width="3.2" height="11" rx="1.2" fill="#5B7CFA"/><rect x="134" y="177" width="3.2" height="10" rx="1.2" fill="#E2557B"/>`;
+        break;
+      case "apron":
+        outfit = `<path d="${bodyPath}" fill="${CL}"/>${uNeck()}${neckShade}<path d="M84 154C87 172 113 172 116 154" fill="none" stroke="${dk}" stroke-width="3.5" stroke-linecap="round"/>` +
+          `<path d="M80 172L88 156M120 172L112 156" stroke="#FFF8EC" stroke-width="4" stroke-linecap="round"/><path d="M79 172H121L126 212H74Z" fill="#FFF8EC" stroke="#E6D9C2" stroke-width="1"/>` +
+          `<path d="M100 196c-4 -3 -6 -5 -6 -7.5a3 3 0 0 1 6 -1a3 3 0 0 1 6 1c0 2.5 -2 4.5 -6 7.5z" fill="#E2557B"/>`;
+        break;
+    }
+
+    /* ---- 얼굴 ---- */
+    const ears = `<ellipse cx="${X(-1)}" cy="${Y(.12)}" rx="8" ry="11" fill="${SK}"/><ellipse cx="${X(1)}" cy="${Y(.12)}" rx="8" ry="11" fill="${SK}"/><ellipse cx="${X(-1)}" cy="${Y(.12)}" rx="3.5" ry="5.5" fill="${dark(skin, .16)}"/><ellipse cx="${X(1)}" cy="${Y(.12)}" rx="3.5" ry="5.5" fill="${dark(skin, .16)}"/>`;
+    const headShape = o.face === "soft"
+      ? `<rect x="${X(-1)}" y="${Y(-1)}" width="${rx * 2}" height="${ry * 2}" rx="34" ry="40" fill="${SK}"/>`
+      : `<ellipse cx="100" cy="${cy}" rx="${rx}" ry="${ry}" fill="${SK}"/>`;
+    const headHi = `<ellipse cx="${X(-.36)}" cy="${Y(-.5)}" rx="17" ry="11" fill="#fff" opacity=".34" filter="url(#${p}blur)"/>`;
+    const blush = o.blush ? `<ellipse cx="76" cy="${cy + 20}" rx="9" ry="5.5" fill="#FF7E98" opacity=".36" filter="url(#${p}blur)"/><ellipse cx="124" cy="${cy + 20}" rx="9" ry="5.5" fill="#FF7E98" opacity=".36" filter="url(#${p}blur)"/>` : "";
+    const freckles = o.freckles ? [[72, 15], [77, 18], [70, 20], [128, 15], [123, 18], [130, 20]].map(([x, d]) => `<circle cx="${x}" cy="${cy + d}" r="1.3" fill="${dark(skin, .35)}" opacity=".7"/>`).join("") : "";
+
+    const browC = o.hair === "none" ? dark(skin, .45) : dark(hairCol, .12);
+    const bw = o.brows === "thick" ? 4.6 : 3.2;
+    const by = eyeY - 15 + (o.brows === "up" ? -3 : 0);
+    let brows;
+    if (o.brows === "worried") brows = `<path d="M${eyeL - 8} ${by + 1}Q${eyeL} ${by - 1} ${eyeL + 8} ${by - 4}" fill="none" stroke="${browC}" stroke-width="3.2" stroke-linecap="round"/><path d="M${eyeR + 8} ${by + 1}Q${eyeR} ${by - 1} ${eyeR - 8} ${by - 4}" fill="none" stroke="${browC}" stroke-width="3.2" stroke-linecap="round"/>`;
+    else { const k = o.brows === "up" ? 1.6 : 1; brows = `<path d="M${eyeL - 8} ${by}Q${eyeL} ${by - 5 * k} ${eyeL + 8} ${by - 1}" fill="none" stroke="${browC}" stroke-width="${bw}" stroke-linecap="round"/><path d="M${eyeR - 8} ${by - 1}Q${eyeR} ${by - 5 * k} ${eyeR + 8} ${by}" fill="none" stroke="${browC}" stroke-width="${bw}" stroke-linecap="round"/>`; }
+
+    const dotEye = (x, big) => big
+      ? `<ellipse cx="${x}" cy="${eyeY}" rx="7" ry="8.4" fill="${ink}"/><circle cx="${x - 2.4}" cy="${eyeY - 3}" r="2.6" fill="#fff"/><circle cx="${x + 2.4}" cy="${eyeY + 2.6}" r="1.2" fill="#fff"/>`
+      : `<ellipse cx="${x}" cy="${eyeY}" rx="5.4" ry="6.6" fill="${ink}"/><circle cx="${x - 1.8}" cy="${eyeY - 2.4}" r="1.9" fill="#fff"/>`;
+    const arcEye = (x) => `<path d="M${x - 7} ${eyeY + 2}Q${x} ${eyeY - 6} ${x + 7} ${eyeY + 2}" fill="none" stroke="${ink}" stroke-width="3.2" stroke-linecap="round"/>`;
+    const sleepyEye = (x) => `<ellipse cx="${x}" cy="${eyeY + 1.5}" rx="5.6" ry="4.2" fill="${ink}"/><circle cx="${x - 1.8}" cy="${eyeY}" r="1.4" fill="#fff"/><path d="M${x - 7.5} ${eyeY - 1}Q${x} ${eyeY - 3.5} ${x + 7.5} ${eyeY - 1}" fill="none" stroke="${ink}" stroke-width="2.6" stroke-linecap="round"/>`;
+    const lashEye = (x, s) => dotEye(x) + `<path d="M${x + s * 4.5} ${eyeY - 5}l${s * 3.5} -3.2M${x + s * 5.6} ${eyeY - 2}l${s * 4} -1.2" stroke="${ink}" stroke-width="1.8" stroke-linecap="round"/>`;
+    const eyes = { dot: dotEye(eyeL) + dotEye(eyeR), sparkle: dotEye(eyeL, 1) + dotEye(eyeR, 1), smile: arcEye(eyeL) + arcEye(eyeR), wink: dotEye(eyeL) + arcEye(eyeR), sleepy: sleepyEye(eyeL) + sleepyEye(eyeR), lashes: lashEye(eyeL, -1) + lashEye(eyeR, 1) }[o.eyes];
+
+    const nose = `<ellipse cx="100" cy="${noseY}" rx="4.4" ry="3.2" fill="${dark(skin, .16)}" opacity=".7"/><circle cx="98.6" cy="${noseY - 1.2}" r="1.2" fill="#fff" opacity=".6"/>`;
+
+    let facial = "";
+    const fh = HR;
+    if (o.facial === "mustache") facial = `<path d="M87 ${noseY + 6}C92 ${noseY + 1} 98 ${noseY + 3} 100 ${noseY + 5}C102 ${noseY + 3} 108 ${noseY + 1} 113 ${noseY + 6}C108 ${noseY + 10} 92 ${noseY + 10} 87 ${noseY + 6}Z" fill="${fh}"/>`;
+    if (o.facial === "beard") facial = `<path fill-rule="evenodd" d="M${P(-.97, .05)}C${P(-.95, .78)} ${P(-.5, 1.06)} 100 ${Y(1.07)}C${P(.5, 1.06)} ${P(.95, .78)} ${P(.97, .05)}C${P(.84, .5)} ${P(.4, .86)} 100 ${Y(.86)}C${P(-.4, .86)} ${P(-.84, .5)} ${P(-.97, .05)}Z" fill="${fh}"/>` +
+      `<path d="M88 ${noseY + 6}C93 ${noseY + 2} 98 ${noseY + 4} 100 ${noseY + 6}C102 ${noseY + 4} 107 ${noseY + 2} 112 ${noseY + 6}C108 ${noseY + 9} 92 ${noseY + 9} 88 ${noseY + 6}Z" fill="${fh}"/>`;
+    if (o.facial === "stubble") facial = `<path d="M${P(-.93, .2)}C${P(-.9, .82)} ${P(-.5, 1.02)} 100 ${Y(1.02)}C${P(.5, 1.02)} ${P(.9, .82)} ${P(.93, .2)}C${P(.7, .44)} ${P(.4, .42)} 100 ${Y(.4)}C${P(-.4, .42)} ${P(-.7, .44)} ${P(-.93, .2)}Z" fill="${hairCol}" opacity=".1" filter="url(#${p}blur)"/>`;
+
+    const lip = "#7A2E38", tongueC = "#F07A8A";
+    const mouth = {
+      smile: `<path d="M89 ${mY - 1}Q100 ${mY + 10} 111 ${mY - 1}" fill="none" stroke="${lip}" stroke-width="3" stroke-linecap="round"/>`,
+      grin: `<path d="M86 ${mY - 3}Q100 ${mY + 18} 114 ${mY - 3}Z" fill="${lip}"/><path d="M88.5 ${mY - 2}Q100 ${mY + 2} 111.5 ${mY - 2}" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><ellipse cx="100" cy="${mY + 7.5}" rx="5.5" ry="2.6" fill="${tongueC}"/>`,
+      calm: `<path d="M93 ${mY + 1}Q100 ${mY + 5} 107 ${mY + 1}" fill="none" stroke="${lip}" stroke-width="3" stroke-linecap="round"/>`,
+      o: `<ellipse cx="100" cy="${mY + 2}" rx="5" ry="6" fill="${lip}"/><ellipse cx="100" cy="${mY + 4.5}" rx="3" ry="2" fill="${tongueC}"/>`,
+      tongue: `<path d="M95.5 ${mY + 3}Q100 ${mY + 13} 104.5 ${mY + 3}Z" fill="${tongueC}" stroke="${lip}" stroke-width="1.4"/><path d="M89 ${mY - 1}Q100 ${mY + 8} 111 ${mY - 1}" fill="none" stroke="${lip}" stroke-width="3" stroke-linecap="round"/>`,
+      smirk: `<path d="M90 ${mY + 1}Q101 ${mY + 6} 112 ${mY - 3}" fill="none" stroke="${lip}" stroke-width="3" stroke-linecap="round"/>`,
+    }[o.mouth];
+
+    let glasses = "";
+    const gc = "#2D2A34";
+    if (o.glasses === "round") glasses = `<circle cx="${eyeL}" cy="${eyeY}" r="12.5" fill="#fff" fill-opacity=".14" stroke="${gc}" stroke-width="3"/><circle cx="${eyeR}" cy="${eyeY}" r="12.5" fill="#fff" fill-opacity=".14" stroke="${gc}" stroke-width="3"/><path d="M${eyeL + 12} ${eyeY - 2}Q100 ${eyeY - 6} ${eyeR - 12} ${eyeY - 2}" fill="none" stroke="${gc}" stroke-width="2.6"/>`;
+    if (o.glasses === "square") glasses = `<rect x="${eyeL - 14}" y="${eyeY - 10}" width="28" height="21" rx="6" fill="#fff" fill-opacity=".14" stroke="${gc}" stroke-width="3"/><rect x="${eyeR - 14}" y="${eyeY - 10}" width="28" height="21" rx="6" fill="#fff" fill-opacity=".14" stroke="${gc}" stroke-width="3"/><path d="M${eyeL + 14} ${eyeY - 3}H${eyeR - 14}" stroke="${gc}" stroke-width="2.6"/>`;
+    if (o.glasses === "horn") glasses = `<path d="M${eyeL - 14} ${eyeY - 6}Q${eyeL - 14} ${eyeY + 11} ${eyeL} ${eyeY + 11}Q${eyeL + 14} ${eyeY + 11} ${eyeL + 14} ${eyeY - 6}Z" fill="#fff" fill-opacity=".12" stroke="${gc}" stroke-width="1.8"/><path d="M${eyeR - 14} ${eyeY - 6}Q${eyeR - 14} ${eyeY + 11} ${eyeR} ${eyeY + 11}Q${eyeR + 14} ${eyeY + 11} ${eyeR + 14} ${eyeY - 6}Z" fill="#fff" fill-opacity=".12" stroke="${gc}" stroke-width="1.8"/><path d="M${eyeL - 15} ${eyeY - 7}H${eyeL + 15}M${eyeR - 15} ${eyeY - 7}H${eyeR + 15}" stroke="#4A2E22" stroke-width="5.5" stroke-linecap="round"/><path d="M${eyeL + 14} ${eyeY - 6}H${eyeR - 14}" stroke="${gc}" stroke-width="2.4"/>`;
+    if (o.glasses === "sun") glasses = `<path d="M${eyeL - 15} ${eyeY - 8}H${eyeL + 15}V${eyeY + 1}Q${eyeL + 14} ${eyeY + 11} ${eyeL} ${eyeY + 11}Q${eyeL - 14} ${eyeY + 11} ${eyeL - 15} ${eyeY + 1}Z" fill="#1F1C26" stroke="${gc}" stroke-width="2"/><path d="M${eyeR - 15} ${eyeY - 8}H${eyeR + 15}V${eyeY + 1}Q${eyeR + 14} ${eyeY + 11} ${eyeR} ${eyeY + 11}Q${eyeR - 14} ${eyeY + 11} ${eyeR - 15} ${eyeY + 1}Z" fill="#1F1C26" stroke="${gc}" stroke-width="2"/><path d="M${eyeL + 15} ${eyeY - 6}H${eyeR - 15}" stroke="${gc}" stroke-width="2.6"/><path d="M${eyeL - 9} ${eyeY - 4}l6 7M${eyeR - 9} ${eyeY - 4}l6 7" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".45"/>`;
+
+    /* ---- 모자/핀 ---- */
+    let hat = "";
+    const HT = `url(#${p}ht)`;
+    if (o.hat === "headband") hat = `<path d="M${P(-1.02, -.18)}C${P(-.92, -1.08)} ${P(.92, -1.08)} ${P(1.02, -.18)}" fill="none" stroke="${HT}" stroke-width="7.5" stroke-linecap="round" filter="url(#${p}sh)"/>`;
+    if (o.hat === "beanie") hat = `<g filter="url(#${p}sh)"><circle cx="100" cy="${Y(-1.22)}" r="10" fill="${light(hatCol, .5)}"/><path d="M${P(-1.1, -.42)}C${P(-1.14, -1.32)} ${P(1.14, -1.32)} ${P(1.1, -.42)}Z" fill="${HT}"/><path d="M${P(-1.13, -.58)}C${P(-.6, -.68)} ${P(.6, -.68)} ${P(1.13, -.58)}L${P(1.12, -.36)}C${P(.6, -.46)} ${P(-.6, -.46)} ${P(-1.12, -.36)}Z" fill="${dark(hatCol, .12)}"/>` +
+      [-.8, -.5, -.2, .1, .4, .7].map(f => `<path d="M${P(f, -.64)}L${P(f + .02, -.44)}" stroke="${dark(hatCol, .3)}" stroke-width="1.4" opacity=".5"/>`).join("") + `</g>`;
+    if (o.hat === "cap") hat = `<g filter="url(#${p}sh)"><path d="M${P(-1.06, -.42)}C${P(-1.08, -1.3)} ${P(1.08, -1.3)} ${P(1.06, -.42)}Z" fill="${HT}"/><path d="M100 ${Y(-1.07)}V${Y(-.5)}" stroke="${dark(hatCol, .25)}" stroke-width="1.4" opacity=".6"/><circle cx="100" cy="${Y(-1.07)}" r="3.5" fill="${dark(hatCol, .2)}"/><ellipse cx="100" cy="${Y(-.42)}" rx="${(rx * 1.02).toFixed(1)}" ry="8.5" fill="${dark(hatCol, .18)}"/><ellipse cx="100" cy="${Y(-.46)}" rx="${(rx * .9).toFixed(1)}" ry="4" fill="${light(hatCol, .2)}" opacity=".5"/></g>`;
+    if (o.hat === "pin") { const cx = +X(.62), cyy = +Y(-.66); let pts = ""; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 3.4 : 8; pts += `${(cx + Math.cos(a) * r).toFixed(1)},${(cyy + Math.sin(a) * r).toFixed(1)} `; } hat = `<polygon points="${pts}" fill="${HT}" stroke="${dark(hatCol, .25)}" stroke-width="1" stroke-linejoin="round" filter="url(#${p}sh)"/>`; }
+    if (o.hat === "flower") { const cx = +X(.66), cyy = +Y(-.64); hat = `<g filter="url(#${p}sh)">` + [0, 1, 2, 3, 4].map(i => { const a = -Math.PI / 2 + i * 2 * Math.PI / 5; return `<circle cx="${(cx + Math.cos(a) * 5.5).toFixed(1)}" cy="${(cyy + Math.sin(a) * 5.5).toFixed(1)}" r="4.6" fill="${HT}"/>`; }).join("") + `<circle cx="${cx}" cy="${cyy}" r="3.4" fill="#F4C542"/></g>`; }
+
+    const badge = o.badge !== "none"
+      ? `<g transform="translate(158 158)" filter="url(#${p}sh)"><circle r="19" fill="url(#${p}bd)" stroke="#fff" stroke-width="2.5"/><g>${badgeIcon(o.badge, dark(o.outfitColor === 7 ? "#5B7CFA" : cloth, .35))}</g></g>`
+      : "";
+
+    const label = opts.title ? `<title>${String(opts.title).replace(/[<&>"]/g, "")}</title>` : "";
+    const showBadge = opts.badge !== false;
+    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img">${label}<defs>${defs}</defs>` +
+      `<g clip-path="url(#${p}clip)"><rect width="200" height="200" fill="url(#${p}bg)"/>${hair.back}${neck}${outfit}` +
+      `<g filter="url(#${p}sh)">${ears}${headShape}</g>${headHi}${blush}${freckles}${hair.front}${hat}${brows}${eyes}${nose}${facial}${mouth}${glasses}</g>${showBadge ? badge : ""}</svg>`;
+  }
+
+  function random() {
+    const pick = (a) => a[Math.floor(Math.random() * a.length)];
+    const keys = (k) => Object.keys(OPTIONS[k]);
+    const rnd = (n) => Math.floor(Math.random() * n);
+    return normalize({
+      face: pick(keys("face")), skin: rnd(SKIN.length), hair: pick(keys("hair").filter(h => h !== "none")), fringe: pick(["auto", "auto", "auto", "straight", "seethrough", "side"]), hairColor: rnd(8),
+      eyes: pick(keys("eyes")), brows: pick(keys("brows")), mouth: pick(keys("mouth")),
+      glasses: pick(["none", "none", "round", "square", "horn"]), facial: pick(["none", "none", "none", "mustache", "beard", "stubble"]),
+      hat: pick(["none", "none", "none", "headband", "beanie", "cap", "pin", "flower"]), hatColor: rnd(OUTFIT_COLORS.length),
+      blush: Math.random() > .3, freckles: Math.random() > .8, outfit: pick(keys("outfit")), outfitColor: rnd(OUTFIT_COLORS.length), bg: rnd(BG_COLORS.length), badge: "none",
+    });
+  }
+
+  return { svg, normalize, random, OPTIONS, DEFAULT, SKIN, HAIR_COLORS, OUTFIT_COLORS, BG_COLORS };
+})();
+
+</script>
+<script>
+(() => {
+  "use strict";
+
+  /* ---------- 상수 ---------- */
+  const API = (CONFIG.API_URL || "").trim();
+  const DEMO = !API;
+  const TYPES = ["수업 지도안", "활동지", "프레젠테이션", "영상", "웹앱·도구", "평가 자료", "수업 사례", "기타"];
+  const GRADES = ["1학년", "2학년", "3학년", "전 학년", "중1", "중2", "중3", "고1", "고2", "고3"];
+  const COLORS = ["c1", "c2", "c3", "c4", "c5", "c6"];
+  const COLOR_NAMES = { c1: "노랑", c2: "분홍", c3: "초록", c4: "파랑", c5: "보라", c6: "흰색" };
+  const SUBJECT_ORDER = ["국어", "수학", "영어", "사회", "역사", "과학", "정보", "기술", "가정", "음악", "미술", "체육", "도덕", "진로"];
+  const SUBJECT_COLORS = { "과학": "#2E9E68", "수학": "#3D6FE0", "국어": "#D0573F", "영어": "#8A5CD6", "역사": "#A8742A", "음악": "#D6457E", "미술": "#E0861E", "체육": "#1E9BB8", "가정": "#B89B1A" };
+  const FALLBACK_COLORS = ["#5B7CFA", "#2CA6C9", "#E2557B", "#34B989", "#8E6CF0", "#F2994A"];
+  const LIMIT = { file: 20 * 1024 * 1024, total: 25 * 1024 * 1024, files: 10, pdfPages: 3 };
+  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+  const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const JSPDF = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+
+  /* ---------- 도우미 ---------- */
+  const $ = (s) => document.querySelector(s);
+  const el = (tag, attrs = {}, ...kids) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v == null || v === false) continue;
+      if (k === "class") n.className = v;
+      else if (k === "text") n.textContent = v;
+      else if (k === "html") n.innerHTML = v; // 우리 코드가 만든 SVG만 넣는다
+      else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+      else n.setAttribute(k, v === true ? "" : v);
+    }
+    for (const kid of kids.flat()) if (kid != null && kid !== "") n.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    return n;
+  };
+  const icon = (path, size = 14) => el("span", { html: `<svg width="${size}" height="${size}" viewBox="0 0 16 16" aria-hidden="true">${path}</svg>`, style: "display:inline-flex" });
+  const I_HEART = '<path d="M8 14s-5.5-3.3-5.5-7.2A3 3 0 018 4.6a3 3 0 015.5 2.2C13.5 10.7 8 14 8 14z" fill="currentColor"/>';
+  const I_CMT = '<path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>';
+  const I_CLIP = '<path d="M10.5 5.5l-4.6 4.6a1.4 1.4 0 002 2l5-5a2.8 2.8 0 00-4-4l-5 5a4.2 4.2 0 006 6l4-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>';
+  const I_LINK = '<path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>';
+  const store = {
+    get(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+    del(k) { try { localStorage.removeItem(k); } catch {} },
+    json(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  };
+  const genId = (p) => p + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7);
+  const safeUrl = (u) => { try { const x = new URL(String(u).trim()); return (x.protocol === "http:" || x.protocol === "https:") ? x.href : null; } catch { return null; } };
+  const fmtDate = (t) => { if (!t) return ""; const d = new Date(t); return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`; };
+  const fmtSize = (b) => b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + "KB" : (b / 1024 / 1024).toFixed(1) + "MB";
+  const str = (v, max = 2000) => (typeof v === "string" ? v : v == null ? "" : String(v)).slice(0, max);
+  const okId = (s) => /^[A-Za-z0-9_-]{1,120}$/.test(String(s || ""));
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  /* ---------- 상태 ---------- */
+  const S = {
+    teachers: [], posts: [], comments: [], loaded: false, loadErr: false,
+    tab: "map", sel: { kind: "all" }, q: "", subject: "전체", type: "전체", sort: "new", view: "wall",
+    openId: null, openStamp: 0, editingId: null, pending: [], editFiles: [], removeIds: new Set(),
+    code: store.get("star-code"), liked: new Set(store.json("star-liked", [])),
+    mk: { cur: StarAvatar.normalize({}), picked: 0 },
+  };
+
+  let toastTimer;
+  function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 3000); }
+  function notice(msg) { $("#notice-text").textContent = msg || ""; $("#notice").hidden = !msg; }
+
+  /* ---------- 서버 연결 (데모 모드는 이 브라우저에만 저장) ---------- */
+  async function apiList() {
+    if (DEMO) return demo.call({ action: "list" });
+    const r = await fetch(API + (API.includes("?") ? "&" : "?") + "action=list&t=" + Date.now(), { cache: "no-store" });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || "목록을 불러오지 못했어요.");
+    return j;
+  }
+  async function apiCall(body) {
+    if (DEMO) return demo.call(body);
+    let r;
+    try { r = await fetch(API, { method: "POST", body: JSON.stringify(body) }); }
+    catch { throw new Error("서버에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요."); }
+    let j;
+    try { j = await r.json(); }
+    catch { throw new Error("서버 응답을 읽지 못했어요. 관리 선생님께 Apps Script 배포 설정(액세스: 모든 사용자)을 확인해 달라고 알려 주세요."); }
+    if (!j.ok) throw new Error(j.error || "요청을 처리하지 못했어요.");
+    return j;
+  }
+
+  const demo = (() => {
+    const KEY = "star-demo-v3";
+    const ROSTER = [["김다영", "체육"], ["김유민", "수학"], ["도혜경", "가정"], ["변지원", "과학"], ["신민화", "과학"], ["안용원", "영어"], ["오세욱", "역사"], ["오연주", "수학"], ["유연", "미술"], ["이귀리", "국어"], ["이상준", "수학"], ["이정연", "과학"], ["이희원", "음악"], ["정종화", "과학"], ["이창준", "과학"]];
+    const fileUrls = {};
+    function seed() {
+      const now = Date.now();
+      return {
+        teachers: ROSTER.map(([name, subject]) => ({ name, subject, avatar: null, updatedAt: 0 })),
+        posts: [
+          { id: "p-demo-1", createdAt: now - 86400000, updatedAt: now - 86400000, teacher: "변지원", subject: "과학", title: "(예시) AI 이미지로 만드는 생태계 포스터", grade: "2학년", type: "수업 사례", tools: ["캔바", "AI 이미지 생성"], desc: "데모 모드에서 보이는 예시 카드예요. Apps Script를 연결하면 사라져요.", links: [], files: [], color: "c3", likes: 2, sample: true },
+          { id: "p-demo-2", createdAt: now - 3600000, updatedAt: now - 3600000, teacher: "오연주", subject: "수학", title: "(예시) 생성형 AI와 함께하는 함수 탐구 활동지", grade: "1학년", type: "활동지", tools: ["ChatGPT", "지오지브라"], desc: "데모 모드 예시 카드예요.", links: [], files: [], color: "c4", likes: 0, sample: true },
+        ],
+        comments: [],
+      };
+    }
+    const load = () => { const d = store.json(KEY, null); return d && Array.isArray(d.teachers) ? d : seed(); };
+    const save = (d) => store.set(KEY, JSON.stringify(d));
+    const need = (b) => { if (!str(b.code).trim()) throw new Error("교사단 코드를 입력해 주세요. (데모 모드에서는 아무 글자나 괜찮아요)"); };
+    const mkFiles = (files, teacher) => (files || []).map(f => {
+      const bin = atob(f.data); const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const id = "local" + Math.random().toString(36).slice(2, 10);
+      fileUrls[id] = URL.createObjectURL(new Blob([bytes], { type: f.mime }));
+      return { id, name: f.name, mime: f.mime, size: bytes.length, kind: f.mime === "application/pdf" ? "pdf" : "image" };
+    });
+    async function call(b) {
+      await sleep(250);
+      const d = load();
+      const findPost = (id) => { const p = d.posts.find(x => x.id === id); if (!p) throw new Error("자료를 찾을 수 없어요."); return p; };
+      switch (b.action) {
+        case "list": return { ok: true, teachers: d.teachers, posts: d.posts, comments: d.comments };
+        case "verify": return { ok: true, valid: !!str(b.code).trim() };
+        case "saveAvatar": { need(b); const t = d.teachers.find(x => x.name === b.name); if (!t) throw new Error("명단에 없는 이름이에요."); t.avatar = b.avatar; t.updatedAt = Date.now(); save(d); return { ok: true, teacher: t }; }
+        case "create": { need(b); const t = d.teachers.find(x => x.name === b.post.teacher); if (!t) throw new Error("명단에 없는 이름이에요."); const now = Date.now(); const p = Object.assign({}, b.post, { id: genId("p"), subject: t.subject, createdAt: now, updatedAt: now, likes: 0, files: mkFiles(b.files) }); d.posts.unshift(p); save(d); return { ok: true, post: p }; }
+        case "update": { need(b); const p = findPost(b.id); const rm = new Set(b.removeFileIds || []); const t = d.teachers.find(x => x.name === b.post.teacher) || { subject: p.subject }; Object.assign(p, b.post, { subject: t.subject, updatedAt: Date.now(), files: p.files.filter(f => !rm.has(f.id)).concat(mkFiles(b.files)) }); save(d); return { ok: true, post: p }; }
+        case "delete": { need(b); d.posts = d.posts.filter(x => x.id !== b.id); d.comments = d.comments.filter(c => c.postId !== b.id); save(d); return { ok: true }; }
+        case "like": { const p = findPost(b.id); p.likes = Math.max(0, (p.likes || 0) + (b.delta === -1 ? -1 : 1)); save(d); return { ok: true, likes: p.likes }; }
+        case "comment": { findPost(b.postId); const c = { id: genId("c"), postId: b.postId, name: str(b.name, 20), text: str(b.text, 300), createdAt: Date.now() }; d.comments.push(c); save(d); return { ok: true, comment: c }; }
+        case "deleteComment": { need(b); d.comments = d.comments.filter(c => c.id !== b.id); save(d); return { ok: true }; }
+      }
+      throw new Error("알 수 없는 요청이에요.");
+    }
+    return { call, fileUrls };
+  })();
+
+  /* ---------- 파일 주소 (구글 드라이브) ---------- */
+  const fileThumb = (f, w = 800) => DEMO ? (demo.fileUrls[f.id] || "") : `https://drive.google.com/thumbnail?id=${encodeURIComponent(f.id)}&sz=w${w}`;
+  const fileView = (f) => DEMO ? (demo.fileUrls[f.id] || "#") : `https://drive.google.com/file/d/${encodeURIComponent(f.id)}/view`;
+  const fileDown = (f) => DEMO ? (demo.fileUrls[f.id] || "#") : `https://drive.google.com/uc?export=download&id=${encodeURIComponent(f.id)}`;
+  const filePreview = (f) => DEMO ? (demo.fileUrls[f.id] || "") : `https://drive.google.com/file/d/${encodeURIComponent(f.id)}/preview`;
+
+  /* ---------- 데이터 정리 ---------- */
+  function normTeacher(t) {
+    let av = t && t.avatar;
+    if (typeof av === "string") { try { av = JSON.parse(av); } catch { av = null; } }
+    return { name: str(t && t.name, 20).trim(), subject: str(t && t.subject, 20).trim() || "기타", avatar: av && typeof av === "object" ? StarAvatar.normalize(av) : null };
+  }
+  function normPost(x) {
+    x = x || {};
+    const links = (Array.isArray(x.links) ? x.links : []).slice(0, 5).map(l => ({ label: str(l && l.label, 40), url: safeUrl(l && l.url) })).filter(l => l.url);
+    const files = (Array.isArray(x.files) ? x.files : []).filter(f => f && okId(f.id)).slice(0, LIMIT.files).map(f => ({ id: String(f.id), name: str(f.name, 120) || "파일", mime: str(f.mime, 60), size: +f.size || 0, kind: f.kind === "pdf" || f.mime === "application/pdf" ? "pdf" : "image" }));
+    return {
+      id: str(x.id, 120), title: str(x.title, 80) || "(제목 없음)", teacher: str(x.teacher, 20), subject: str(x.subject, 20) || "기타",
+      grade: str(x.grade, 20), type: TYPES.includes(x.type) ? x.type : "기타",
+      tools: (Array.isArray(x.tools) ? x.tools : []).map(t => str(t, 24)).filter(Boolean).slice(0, 10),
+      desc: str(x.desc, 2000), links, files, color: COLORS.includes(x.color) ? x.color : "c6",
+      likes: Math.max(0, +x.likes || 0), sample: x.sample === true,
+      createdAt: +x.createdAt || 0, updatedAt: +x.updatedAt || 0,
+    };
+  }
+  const teacherOf = (name) => S.teachers.find(t => t.name === name);
+  const subjColor = (s) => {
+    if (SUBJECT_COLORS[s]) return SUBJECT_COLORS[s];
+    const subs = subjects(); const i = Math.max(0, subs.indexOf(s));
+    return FALLBACK_COLORS[i % FALLBACK_COLORS.length];
+  };
+  function subjects() {
+    const seen = [];
+    S.teachers.forEach(t => { if (!seen.includes(t.subject)) seen.push(t.subject); });
+    S.posts.forEach(p => { if (!seen.includes(p.subject)) seen.push(p.subject); });
+    return seen.sort((a, b) => { const ia = SUBJECT_ORDER.indexOf(a), ib = SUBJECT_ORDER.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, "ko"); });
+  }
+  const postsOf = (name) => S.posts.filter(p => p.teacher === name);
+  const cmtsOf = (id) => S.comments.filter(c => c.postId === id).sort((a, b) => a.createdAt - b.createdAt);
+  const avatarSvg = (name, opts = {}) => { const t = teacherOf(name); return StarAvatar.svg(t && t.avatar ? t.avatar : { bg: 6, outfitColor: 7 }, Object.assign({ badge: false }, opts)); };
+
+  /* ---------- 불러오기 ---------- */
+  let loading = false;
+  async function load(first) {
+    if (loading) return;
+    loading = true;
+    const slow = first ? setTimeout(() => { if (!S.loaded) notice("자료를 불러오는 데 시간이 걸리고 있어요. 잠시만 기다려 주세요."); }, 8000) : null;
+    try {
+      const j = await apiList();
+      S.teachers = (j.teachers || []).map(normTeacher).filter(t => t.name);
+      S.posts = (j.posts || []).map(normPost).filter(p => p.id);
+      S.comments = (j.comments || []).map(c => ({ id: str(c.id, 120), postId: str(c.postId, 120), name: str(c.name, 20), text: str(c.text, 300), createdAt: +c.createdAt || 0 })).filter(c => c.id && c.text);
+      S.loaded = true; S.loadErr = false;
+      if (DEMO) notice("지금은 데모 모드예요. 이 브라우저에만 저장되고, index.html의 API_URL에 Apps Script 주소를 넣으면 모든 선생님이 함께 쓰는 보드가 돼요.");
+      else notice("");
+      renderAll();
+    } catch (e) {
+      S.loadErr = true;
+      if (!S.loaded) {
+        $("#cover-count").textContent = "자료를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.";
+        $("#all-board").replaceChildren(el("div", { class: "empty" }, el("h3", { text: "자료를 불러오지 못했어요" }), el("p", { text: "인터넷 연결을 확인하고 새로고침해 주세요. 계속 안 되면 관리 선생님께 알려 주세요." })));
+      }
+      notice("최신 내용을 불러오지 못했어요. " + (e && e.message ? e.message : ""));
+    } finally {
+      clearTimeout(slow);
+      loading = false;
+    }
+  }
+
+  /* ---------- 그리기 ---------- */
+  function renderAll() {
+    $("#st-teachers").textContent = S.teachers.length;
+    $("#st-subjects").textContent = new Set(S.teachers.map(t => t.subject)).size;
+    $("#st-posts").textContent = S.posts.length;
+    if (!$("#cover").hidden) renderCover();
+    renderAllTab();
+    if (S.openId) fillDetail(false);
+  }
+
+  function groups() {
+    return subjects().map(s => ({ subject: s, teachers: S.teachers.filter(t => t.subject === s) })).filter(g => g.teachers.length);
+  }
+
+  function isSel(kind, value) { return S.sel.kind === kind && (kind === "all" || S.sel.value === value); }
+
+  /* ---------- 표지: 밤하늘 별자리 ---------- */
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const STAR_PATH = "M24 9.5l4.3 8.8 9.7 1.4-7 6.8 1.7 9.6L24 31.6l-8.7 4.5 1.7-9.6-7-6.8 9.7-1.4z";
+
+  // 별 모양(꼭짓점 10개) 둘레를 따라 선생님 자리를 정한다. 10명 이상이면 꼭짓점을 모두 쓰고 나머지는 변 위에 고르게.
+  function starSeats(n, cx, cy, R, r) {
+    const V = [];
+    for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rad = i % 2 ? r : R; V.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad]); }
+    const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+    if (n <= 10) {
+      // 둘레 길이를 n등분 (꼭짓점 0부터)
+      const seg = V.map((p, i) => Math.hypot(V[(i + 1) % 10][0] - p[0], V[(i + 1) % 10][1] - p[1]));
+      const total = seg.reduce((s, x) => s + x, 0), out = [];
+      for (let k = 0; k < n; k++) {
+        let d = total * k / n, i = 0;
+        while (d > seg[i]) { d -= seg[i]; i++; }
+        out.push(lerp(V[i], V[(i + 1) % 10], d / seg[i]));
+      }
+      return out;
+    }
+    const extra = n - 10, per = Array(10).fill(0), order = [0, 5, 2, 7, 4, 9, 1, 6, 3, 8];
+    for (let k = 0; k < extra; k++) per[order[k % 10]]++;
+    const out = [];
+    V.forEach((p, i) => { out.push(p); for (let j = 1; j <= per[i]; j++) out.push(lerp(p, V[(i + 1) % 10], j / (per[i] + 1))); });
+    return out;
+  }
+
+  let coverSig = "";
+  function renderCover(force) {
+    const box = $("#constellation");
+    if (!box) return;
+    $("#cover-count").textContent = S.loaded ? `선생님 ${S.teachers.length}명이 나눈 수업자료 ${S.posts.length}개` : "별자리를 불러오는 중이에요";
+    const sig = JSON.stringify(S.teachers.map(t => [t.name, t.avatar]));
+    if (!force && sig === coverSig && box.firstChild) return; // 바뀐 게 없으면 다시 그리지 않아요 (반짝임·선 그리기가 끊기지 않게)
+    coverSig = sig;
+    const W = 800, H = 760, cx = 400, cy = 402, R = 330, r = 136, AV = 60;
+    const list = S.teachers.slice();
+    const seats = starSeats(Math.max(list.length, 1), cx, cy, R, r);
+    const path = seats.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join("") + "Z";
+    let nodes = "";
+    list.forEach((t, i) => {
+      const [x, y] = seats[i];
+      const delay = ((i * 0.37) % 2.4).toFixed(2), dur = (2.2 + (i % 5) * 0.35).toFixed(2);
+      const glow = `<circle class="glow" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${t.avatar ? 46 : 26}" fill="url(#cv-glow)" style="animation-delay:-${delay}s;animation-duration:${dur}s"/>`;
+      let body;
+      if (t.avatar) {
+        body = StarAvatar.svg(t.avatar, { badge: false }).replace("<svg ", `<svg x="${(x - AV / 2).toFixed(1)}" y="${(y - AV / 2).toFixed(1)}" width="${AV}" height="${AV}" `) +
+          `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${AV / 2 + 1.5}" fill="none" stroke="#FFE7A3" stroke-width="2" opacity=".9"/>`;
+      } else {
+        // 반짝임 애니메이션이 위치(translate)를 덮어쓰지 않게 바깥 g에서 옮기고 안쪽 path만 반짝이게
+        body = `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><path class="spark" d="M0 -13C1.6 -3.5 3.5 -1.6 13 0C3.5 1.6 1.6 3.5 0 13C-1.6 3.5 -3.5 1.6 -13 0C-3.5 -1.6 -1.6 -3.5 0 -13Z" fill="#FFF4D2" style="animation-delay:-${delay}s;animation-duration:${dur}s"/></g>`;
+      }
+      nodes += `<g class="cv-node" tabindex="0" role="button" data-value="${esc(t.name)}" aria-label="${t.avatar ? "선생님 별" : "아직 캐릭터가 없는 별"}, 자료 보기">${glow}${body}</g>`;
+    });
+    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="STAR 교사단 별자리">
+      <defs>
+        <radialGradient id="cv-glow"><stop offset="0" stop-color="#FFE08A" stop-opacity=".85"/><stop offset=".45" stop-color="#FFC94A" stop-opacity=".28"/><stop offset="1" stop-color="#FFC94A" stop-opacity="0"/></radialGradient>
+        <filter id="cv-soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <path class="cv-lines" d="${path}" pathLength="1" fill="none" stroke="#FFE7A3" stroke-width="1.6" stroke-linejoin="round"/>
+      ${nodes}
+      <g class="cv-title" filter="url(#cv-soft)">
+        <path d="${STAR_PATH}" transform="translate(${cx - 17} ${cy - 112}) scale(.72)" fill="#FFD25A"/>
+        <text x="${cx}" y="${cy - 16}" text-anchor="middle" dominant-baseline="central" class="cv-star">STAR</text>
+      </g>
+      <text x="${cx}" y="${cy + 40}" text-anchor="middle" dominant-baseline="central" class="cv-team">교사단</text>
+      <text x="${cx}" y="${cy + 74}" text-anchor="middle" dominant-baseline="central" class="cv-sub">수업자료 나눔터</text>
+    </svg>`;
+  }
+
+  // 배경 밤하늘: 캔버스에 작은 별들이 깜빡임
+  const sky = (() => {
+    let cv, ctx, stars = [], raf = 0, running = false, w = 0, h = 0;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function size() {
+      if (!cv) return;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      w = cv.clientWidth; h = cv.clientHeight;
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const n = Math.round(w * h / 2600);
+      stars = Array.from({ length: n }, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() < .08 ? 1.3 + Math.random() : .3 + Math.random() * .9, p: Math.random() * Math.PI * 2, s: .6 + Math.random() * 1.8, warm: Math.random() < .25 }));
+    }
+    function draw(t) {
+      ctx.clearRect(0, 0, w, h);
+      for (const s of stars) {
+        const a = still ? .7 : .35 + .65 * (0.5 + 0.5 * Math.sin(t / 1000 * s.s + s.p));
+        ctx.globalAlpha = a;
+        ctx.fillStyle = s.warm ? "#FFE3A3" : "#DDE6FF";
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      if (running && !still) raf = requestAnimationFrame(draw);
+    }
+    return {
+      start() { cv = cv || $("#sky"); if (!cv) return; ctx = ctx || cv.getContext("2d"); running = true; size(); cancelAnimationFrame(raf); draw(performance.now()); },
+      stop() { running = false; cancelAnimationFrame(raf); },
+      resize() { if (running) { size(); if (still) draw(0); } },
+    };
+  })();
+
+  function showCover() {
+    const c = $("#cover");
+    c.hidden = false; c.classList.remove("leaving");
+    $("#app").hidden = true;
+    document.body.classList.add("on-cover");
+    renderCover(true); sky.start();
+    window.scrollTo(0, 0);
+  }
+  function enter(sel) {
+    if (sel) S.sel = sel;
+    const c = $("#cover");
+    const finish = () => { c.hidden = true; sky.stop(); };
+    $("#app").hidden = false;
+    document.body.classList.remove("on-cover");
+    renderAllTab();
+    window.scrollTo(0, 0);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) finish();
+    else { c.classList.add("leaving"); setTimeout(finish, 650); }
+  }
+
+  function select(sel) {
+    S.sel = sel;
+    renderAllTab();
+  }
+
+  function card(p) {
+    const img = p.files.find(f => f.kind === "image") || (!DEMO && p.files.find(f => f.kind === "pdf"));
+    const cc = cmtsOf(p.id).length, liked = S.liked.has(p.id);
+    const cover = img ? el("img", { class: "cover", src: fileThumb(img, 600), alt: "", loading: "lazy", referrerpolicy: "no-referrer", onerror: (e) => e.target.remove() }) : null;
+    return el("button", { type: "button", class: "card", style: `--card: var(--${p.color})`, onclick: () => openDetail(p.id), "aria-label": `${p.title} 자세히 보기` },
+      cover,
+      el("div", { class: "body" },
+        el("div", { class: "meta-top" },
+          el("span", { class: "pill", style: `background:${subjColor(p.subject)}`, text: p.subject }),
+          el("span", { class: "pill type", text: p.type }),
+          p.sample ? el("span", { class: "pill sample", text: "예시" }) : null),
+        el("h3", { text: p.title }),
+        el("div", { class: "byline" }, el("span", { class: "mini", html: avatarSvg(p.teacher) }), [p.teacher && p.teacher + " 선생님", p.grade, fmtDate(p.createdAt)].filter(Boolean).join(" · ")),
+        p.desc ? el("p", { class: "desc", text: p.desc }) : null,
+        p.tools.length ? el("div", { class: "tags" }, p.tools.map(t => el("span", { class: "tag", text: "#" + t }))) : null,
+        el("div", { class: "card-foot" },
+          el("span", { class: liked ? "liked" : null }, icon(I_HEART), p.likes),
+          el("span", {}, icon(I_CMT), cc),
+          p.files.length ? el("span", {}, icon(I_CLIP), p.files.length) : null,
+          p.links.length ? el("span", {}, icon(I_LINK), p.links.length) : null)));
+  }
+
+  function renderAllTab() {
+    if (!S.loaded) return;
+    const counts = {};
+    S.posts.forEach(p => counts[p.subject] = (counts[p.subject] || 0) + 1);
+    const chips = $("#chips"); chips.replaceChildren();
+    const mk = (label, n) => el("button", { type: "button", class: "chip", "aria-pressed": String(S.subject === label), onclick: () => { S.subject = label; renderAllTab(); } }, label, el("span", { class: "n", text: n }));
+    chips.append(mk("전체", S.posts.length));
+    subjects().filter(s => counts[s]).forEach(s => chips.append(mk(s, counts[s])));
+
+    // 표지에서 별(선생님)을 눌러 들어온 경우: 그 선생님 자료만
+    const fb = $("#filter-banner");
+    const tsel = S.sel.kind === "teacher" ? teacherOf(S.sel.value) : null;
+    if (tsel) {
+      const n = postsOf(tsel.name).length;
+      fb.replaceChildren(el("div", { class: "pav", html: avatarSvg(tsel.name) }),
+        el("div", { class: "grow" }, el("h2", { text: `${tsel.name} 선생님의 자료` }), el("p", { text: `${tsel.subject} · ${n}개` })),
+        el("button", { type: "button", class: "btn btn-ghost btn-sm", onclick: () => openMaker(tsel.name) }, tsel.avatar ? "캐릭터 다시 꾸미기" : "캐릭터 만들기"),
+        el("button", { type: "button", class: "btn btn-ghost btn-sm", onclick: () => select({ kind: "all" }) }, "전체 자료 보기"));
+      fb.hidden = false;
+    } else { fb.hidden = true; fb.replaceChildren(); }
+    const q = S.q.trim().toLowerCase();
+    let list = S.posts.filter(p => (!tsel || p.teacher === tsel.name) && (S.subject === "전체" || p.subject === S.subject) && (S.type === "전체" || p.type === S.type) &&
+      (!q || [p.title, p.teacher, p.desc, p.grade, p.subject, p.type, ...p.tools].join(" ").toLowerCase().includes(q)));
+    if (S.sort === "new") list.sort((a, b) => b.createdAt - a.createdAt);
+    else if (S.sort === "like") list.sort((a, b) => b.likes - a.likes || b.createdAt - a.createdAt);
+    else list.sort((a, b) => a.title.localeCompare(b.title, "ko"));
+    const board = $("#all-board");
+    if (!S.posts.length) { board.replaceChildren(el("div", { class: "empty" }, el("h3", { text: "아직 올라온 자료가 없어요" }), el("p", { text: "오른쪽 위 ‘자료 올리기’로 첫 자료를 나눠 주세요." }))); return; }
+    if (!list.length) { board.replaceChildren(el("div", { class: "empty" }, el("h3", { text: tsel && !postsOf(tsel.name).length ? "아직 올린 자료가 없어요" : "조건에 맞는 자료가 없어요" }), el("p", { text: tsel && !postsOf(tsel.name).length ? "오른쪽 위 ‘자료 올리기’로 첫 자료를 나눠 주세요." : "검색어나 교과 필터를 바꿔 보세요." }))); return; }
+    if (S.view === "wall") board.replaceChildren(el("div", { class: "wall" }, list.map(card)));
+    else {
+      const g = {}; list.forEach(p => (g[p.subject] ||= []).push(p));
+      board.replaceChildren(el("div", { class: "shelf" }, subjects().filter(s => g[s]).map(s =>
+        el("section", { class: "col", "aria-label": s }, el("div", { class: "col-head" }, el("h3", { text: s, style: `color:${subjColor(s)}` }), el("span", { text: g[s].length + "개" })), g[s].map(card)))));
+    }
+  }
+
+  /* ---------- 모달 공통 ---------- */
+  let lastFocus = null;
+  function openOv(id, focusSel) { lastFocus = document.activeElement; $("#" + id).hidden = false; const f = focusSel && $(focusSel); if (f) setTimeout(() => f.focus(), 30); }
+  function closeOv(id) {
+    $("#" + id).hidden = true;
+    if (id === "ov-detail") { S.openId = null; try { history.replaceState(null, "", location.pathname + location.search); } catch {} }
+    if (id === "ov-form") { S.pending.forEach(it => it.preview && URL.revokeObjectURL(it.preview)); S.pending = []; }
+    if (id === "ov-code" && codeResolver) { codeResolver(null); codeResolver = null; }
+    if (lastFocus && document.body.contains(lastFocus)) lastFocus.focus();
+  }
+
+  /* ---------- 교사단 코드 ---------- */
+  let codeResolver = null;
+  function ensureCode() {
+    if (S.code) return Promise.resolve(S.code);
+    return new Promise((resolve) => {
+      codeResolver = resolve;
+      $("#code-input").value = ""; $("#code-err").textContent = "";
+      openOv("ov-code", "#code-input");
+    });
+  }
+  function rememberCode(code, remember) {
+    S.code = code;
+    if (remember) store.set("star-code", code); else store.del("star-code");
+  }
+  function forgetCodeIfWrong(e) {
+    if (e && /코드/.test(e.message || "")) { S.code = ""; store.del("star-code"); }
+  }
+
+  /* ---------- 자료 상세 ---------- */
+  function openDetail(id) {
+    S.openId = id; S.openStamp = -1;
+    try { if (okId(id)) history.replaceState(null, "", "#" + id); } catch {}
+    fillDetail(true);
+    openOv("ov-detail", "#ov-detail .x");
+  }
+  function fillDetail(force) {
+    const p = S.posts.find(x => x.id === S.openId);
+    if (!p) { if (!$("#ov-detail").hidden) closeOv("ov-detail"); return; }
+    if (force || S.openStamp !== p.updatedAt) {
+      S.openStamp = p.updatedAt;
+      $("#d-pills").replaceChildren(el("span", { class: "pill", style: `background:${subjColor(p.subject)}`, text: p.subject }), el("span", { class: "pill type", text: p.type }), p.sample ? el("span", { class: "pill sample", text: "예시" }) : "");
+      $("#d-title").textContent = p.title;
+      $("#d-byline").replaceChildren(el("span", { class: "mini", html: avatarSvg(p.teacher) }),
+        [p.teacher && p.teacher + " 선생님", p.grade, "올린 날 " + fmtDate(p.createdAt), p.updatedAt && p.updatedAt - p.createdAt > 60000 ? "수정 " + fmtDate(p.updatedAt) : ""].filter(Boolean).join(" · "));
+      $("#d-tags").replaceChildren(...p.tools.map(t => el("span", { class: "tag", text: "#" + t })));
+      $("#d-desc").textContent = p.desc; $("#d-desc").hidden = !p.desc;
+      const imgs = p.files.filter(f => f.kind === "image"), pdfs = p.files.filter(f => f.kind === "pdf");
+      const media = [];
+      if (imgs.length) media.push(el("div", { class: "gallery" }, imgs.map(f => el("a", { href: fileView(f), target: "_blank", rel: "noopener", title: f.name },
+        el("img", { src: fileThumb(f, 1000), alt: f.name, loading: "lazy", referrerpolicy: "no-referrer" })))));
+      pdfs.forEach(f => media.push(el("div", { class: "pdfbox" },
+        el("iframe", { src: filePreview(f), title: f.name + " 미리보기", loading: "lazy", allow: "autoplay" }),
+        el("div", { class: "pdfbar" }, el("span", { text: `${f.name} · ${fmtSize(f.size)}` }),
+          el("span", { class: "row" }, el("a", { class: "btn btn-ghost btn-sm", href: fileView(f), target: "_blank", rel: "noopener" }, "새 창에서 보기"),
+            el("a", { class: "btn btn-ghost btn-sm", href: fileDown(f), target: "_blank", rel: "noopener" }, "내려받기"))))));
+      $("#d-media").replaceChildren(...media);
+      const links = p.links.map(l => el("a", { class: "link-btn", href: l.url, target: "_blank", rel: "noopener noreferrer" }, icon(I_LINK, 18), el("span", {}, l.label || "자료 링크", el("small", { text: l.url }))));
+      $("#d-links").replaceChildren(...links);
+      $("#d-links-lbl").hidden = !links.length;
+    }
+    const lb = $("#d-like");
+    lb.setAttribute("aria-pressed", String(S.liked.has(p.id)));
+    $("#d-like-n").textContent = p.likes;
+    const cs = cmtsOf(p.id);
+    $("#d-cmt-n").textContent = cs.length ? cs.length + "개" : "";
+    $("#d-comments").replaceChildren(...(cs.length ? cs.map(c => el("div", { class: "cmt" },
+      el("div", { class: "cmt-head" }, el("span", {}, el("b", { text: c.name || "익명" }), " · " + fmtDate(c.createdAt)),
+        el("button", { type: "button", class: "cmt-del", text: "삭제", onclick: () => delComment(c.id) })),
+      el("p", { text: c.text }))) : [el("div", { class: "hint", text: "첫 댓글을 남겨 보세요." })]));
+    const foot = $("#d-foot"); foot.replaceChildren();
+    if (!p.sample || DEMO) {
+      const del = el("button", { type: "button", class: "btn btn-danger", text: "삭제" });
+      del.addEventListener("click", () => {
+        if (del.dataset.armed) { deletePost(p.id); return; }
+        del.dataset.armed = "1"; del.textContent = "한 번 더 누르면 삭제돼요";
+        setTimeout(() => { delete del.dataset.armed; del.textContent = "삭제"; }, 4000);
+      });
+      foot.append(del, el("button", { type: "button", class: "btn btn-ghost", text: "수정", onclick: () => { closeOv("ov-detail"); openForm(p); } }));
+    }
+    foot.append(el("span", { class: "grow" }), el("button", { type: "button", class: "btn btn-primary", text: "닫기", onclick: () => closeOv("ov-detail") }));
+  }
+
+  async function deletePost(id) {
+    const code = await ensureCode(); if (!code) return;
+    try {
+      await apiCall({ action: "delete", code, id });
+      S.posts = S.posts.filter(p => p.id !== id); S.comments = S.comments.filter(c => c.postId !== id);
+      closeOv("ov-detail"); renderAll(); toast("자료를 삭제했어요.");
+    } catch (e) { forgetCodeIfWrong(e); toast(e.message); }
+  }
+
+  let liking = false;
+  async function toggleLike() {
+    const p = S.posts.find(x => x.id === S.openId);
+    if (!p || liking) return;
+    liking = true;
+    const on = !S.liked.has(p.id);
+    on ? S.liked.add(p.id) : S.liked.delete(p.id);
+    p.likes = Math.max(0, p.likes + (on ? 1 : -1));
+    store.set("star-liked", JSON.stringify([...S.liked].slice(-500)));
+    fillDetail(false);
+    try { const r = await apiCall({ action: "like", id: p.id, delta: on ? 1 : -1 }); p.likes = +r.likes || 0; }
+    catch (e) { on ? S.liked.delete(p.id) : S.liked.add(p.id); p.likes = Math.max(0, p.likes + (on ? -1 : 1)); toast(e.message); }
+    liking = false;
+    fillDetail(false); renderAllTab();
+  }
+
+  async function addComment(e) {
+    e.preventDefault();
+    const name = $("#c-name").value.trim(), text = $("#c-text").value.trim();
+    if (!text) { $("#c-text").focus(); return; }
+    const btn = e.submitter || $("#cmt-form button"); btn.disabled = true;
+    try {
+      const r = await apiCall({ action: "comment", postId: S.openId, name, text });
+      S.comments.push({ id: r.comment.id, postId: S.openId, name: str(r.comment.name, 20), text: str(r.comment.text, 300), createdAt: +r.comment.createdAt || Date.now() });
+      $("#c-text").value = ""; if (name) store.set("star-cmt-name", name);
+      fillDetail(false); renderAllTab();
+    } catch (err) { toast(err.message); }
+    btn.disabled = false;
+  }
+  async function delComment(id) {
+    const code = await ensureCode(); if (!code) return;
+    try { await apiCall({ action: "deleteComment", code, id }); S.comments = S.comments.filter(c => c.id !== id); fillDetail(false); renderAllTab(); }
+    catch (e) { forgetCodeIfWrong(e); toast(e.message); }
+  }
+
+  /* ---------- 파일 압축 ---------- */
+  let pdfLibs = null;
+  const loadScript = (src) => new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("PDF 도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.")); document.head.append(s); });
+  function loadPdfLibs() {
+    if (!pdfLibs) pdfLibs = (async () => {
+      if (!window.pdfjsLib) await loadScript(PDFJS);
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+      if (!window.jspdf) await loadScript(JSPDF);
+    })().catch(e => { pdfLibs = null; throw e; });
+    return pdfLibs;
+  }
+  const canvasBlob = (cv, q) => new Promise((res, rej) => cv.toBlob(b => b ? res(b) : rej(new Error("이미지를 변환하지 못했어요.")), "image/jpeg", q));
+
+  async function processImage(it) {
+    const f = it.file;
+    if (f.type === "image/gif") { it.out = f; it.mime = "image/gif"; return; }
+    let bmp;
+    try { bmp = await createImageBitmap(f); }
+    catch { throw new Error(/heic|heif/i.test(f.type + f.name) ? "HEIC 사진은 열 수 없어요. 아이폰 설정 > 카메라 > 포맷에서 '높은 호환성'을 고르거나 JPG로 바꿔 주세요." : "이 사진을 열 수 없어요."); }
+    const MAX = 1920, scale = Math.min(1, MAX / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+    if (scale === 1 && f.size < 700 * 1024 && /jpe?g|png|webp/.test(f.type)) { it.out = f; it.mime = f.type; bmp.close && bmp.close(); return; }
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    const ctx = cv.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h); ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close && bmp.close();
+    const blob = await canvasBlob(cv, .82);
+    if (blob.size < f.size) { it.out = blob; it.mime = "image/jpeg"; it.compressed = true; it.name = it.name.replace(/\.[^.]+$/, "") + ".jpg"; }
+    else { it.out = f; it.mime = f.type; }
+  }
+
+  async function processPdf(it) {
+    await loadPdfLibs();
+    const buf = await it.file.arrayBuffer();
+    let pdf;
+    try { pdf = await window.pdfjsLib.getDocument({ data: buf }).promise; }
+    catch (e) { throw new Error(e && e.name === "PasswordException" ? "암호가 걸린 PDF는 올릴 수 없어요." : "PDF를 열 수 없어요. 파일이 손상되었는지 확인해 주세요."); }
+    it.pages = pdf.numPages;
+    if (pdf.numPages > LIMIT.pdfPages) throw new Error(`3쪽 이하 PDF만 올릴 수 있어요. (이 파일은 ${pdf.numPages}쪽)`);
+    if (it.file.size <= 2 * 1024 * 1024) { it.out = it.file; it.mime = "application/pdf"; return; }
+    const { jsPDF } = window.jspdf;
+    let doc = null;
+    for (let i = 1; i <= pdf.numPages; i++) {
+      it.progress = `${i}/${pdf.numPages}쪽 압축 중`; renderFiles();
+      const page = await pdf.getPage(i);
+      const base = page.getViewport({ scale: 1 });
+      const scale = Math.min(2.2, 1754 / Math.max(base.width, base.height));
+      const vp = page.getViewport({ scale });
+      const cv = document.createElement("canvas"); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+      const ctx = cv.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      const data = cv.toDataURL("image/jpeg", .74);
+      const orient = base.width > base.height ? "l" : "p";
+      if (!doc) doc = new jsPDF({ orientation: orient, unit: "pt", format: [base.width, base.height], compress: true });
+      else doc.addPage([base.width, base.height], orient);
+      doc.addImage(data, "JPEG", 0, 0, base.width, base.height, undefined, "FAST");
+    }
+    const blob = doc.output("blob");
+    it.progress = "";
+    if (blob.size < it.file.size * .85) { it.out = new Blob([blob], { type: "application/pdf" }); it.compressed = true; }
+    else it.out = it.file;
+    it.mime = "application/pdf";
+  }
+
+  function addFiles(list) {
+    const err = $("#form-err"); err.textContent = "";
+    const kept = S.editFiles.filter(f => !S.removeIds.has(f.id)).length;
+    for (const file of list) {
+      if (kept + S.pending.length >= LIMIT.files) { err.textContent = "파일은 10개까지 올릴 수 있어요."; break; }
+      const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      const isImg = /^image\//.test(file.type) || /\.(heic|heif)$/i.test(file.name);
+      if (!isPdf && !isImg) { err.textContent = `${file.name}: 사진과 PDF만 올릴 수 있어요. 다른 파일은 드라이브 링크로 공유해 주세요.`; continue; }
+      if (file.size > 80 * 1024 * 1024) { err.textContent = `${file.name}: 파일이 너무 커요(80MB 초과). 드라이브에 올리고 링크를 붙여 주세요.`; continue; }
+      const it = { key: genId("f"), file, name: file.name, kind: isPdf ? "pdf" : "image", status: "working", out: null, mime: "", compressed: false, useOriginal: false, preview: "", progress: "", err: "" };
+      S.pending.push(it);
+      (isPdf ? processPdf(it) : processImage(it)).then(() => {
+        it.status = "ready";
+        if (it.kind === "image") it.preview = URL.createObjectURL(it.out);
+        if (finalBlob(it).size > LIMIT.file) { it.status = "error"; it.err = `압축해도 ${fmtSize(finalBlob(it).size)}라서 너무 커요. 드라이브 링크로 공유해 주세요.`; }
+      }).catch(e => { it.status = "error"; it.err = e.message || "파일을 처리하지 못했어요."; }).finally(renderFiles);
+    }
+    renderFiles();
+  }
+  const finalBlob = (it) => it.useOriginal ? it.file : it.out;
+
+  function renderFiles() {
+    const box = $("#file-list"); box.replaceChildren();
+    const kept = S.editFiles.filter(f => !S.removeIds.has(f.id));
+    kept.forEach(f => box.append(el("div", { class: "frow" },
+      f.kind === "image" ? el("img", { class: "th", src: fileThumb(f, 120), alt: "", referrerpolicy: "no-referrer" }) : el("span", { class: "th", text: "PDF" }),
+      el("div", {}, el("div", { class: "nm", text: f.name }), el("div", { class: "st", text: `올려 둔 파일 · ${fmtSize(f.size)}` })),
+      el("div", { class: "bt" }, el("button", { type: "button", class: "btn btn-ghost btn-sm", text: "빼기", onclick: () => { S.removeIds.add(f.id); renderFiles(); } })))));
+    S.pending.forEach(it => {
+      let st, cls = "st";
+      if (it.status === "working") st = it.progress || (it.kind === "pdf" ? "PDF 확인 중…" : "사진 줄이는 중…");
+      else if (it.status === "error") { st = it.err; cls += " err"; }
+      else {
+        const fb = finalBlob(it);
+        st = it.compressed && !it.useOriginal ? `${fmtSize(it.file.size)} → ${fmtSize(fb.size)}로 압축했어요` : `${fmtSize(fb.size)} · ${it.useOriginal ? "원본으로 올려요" : "그대로 올려요"}`;
+        if (it.pages) st += ` · ${it.pages}쪽`;
+        cls += " ok";
+      }
+      const canToggle = it.status === "ready" && it.compressed && it.file.size <= LIMIT.file;
+      box.append(el("div", { class: "frow" },
+        it.preview ? el("img", { class: "th", src: it.preview, alt: "" }) : el("span", { class: "th", text: it.kind === "pdf" ? "PDF" : "사진" }),
+        el("div", {}, el("div", { class: "nm", text: it.name }), el("div", { class: cls, text: st })),
+        el("div", { class: "bt" },
+          canToggle ? el("button", { type: "button", class: "btn btn-ghost btn-sm", text: it.useOriginal ? "압축본 쓰기" : "원본 쓰기", onclick: () => { it.useOriginal = !it.useOriginal; renderFiles(); } }) : null,
+          el("button", { type: "button", class: "btn btn-ghost btn-sm", text: "빼기", onclick: () => { if (it.preview) URL.revokeObjectURL(it.preview); S.pending = S.pending.filter(x => x !== it); renderFiles(); } }))));
+    });
+    const total = totalBytes();
+    const n = kept.length + S.pending.length;
+    const t = $("#file-total");
+    t.textContent = n ? `${n}/${LIMIT.files}개 · 합계 ${fmtSize(total)} / 25MB` : "";
+    t.classList.toggle("over", total > LIMIT.total);
+  }
+  const totalBytes = () => S.editFiles.filter(f => !S.removeIds.has(f.id)).reduce((s, f) => s + f.size, 0) + S.pending.filter(i => i.status === "ready").reduce((s, i) => s + finalBlob(i).size, 0);
+  const toB64 = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = () => rej(new Error("파일을 읽지 못했어요.")); r.readAsDataURL(blob); });
+
+  /* ---------- 자료 올리기 / 수정 ---------- */
+  function linkRow(l = {}) {
+    const row = el("div", { class: "link-row" },
+      el("input", { class: "inp l-label", type: "text", maxlength: "40", placeholder: "이름 (예: 활동지)", value: l.label || "", "aria-label": "링크 이름" }),
+      el("input", { class: "inp l-url", type: "url", placeholder: "https://", value: l.url || "", "aria-label": "링크 주소" }),
+      el("button", { type: "button", class: "btn btn-ghost btn-sm", text: "빼기", onclick: () => { row.remove(); syncAddLink(); } }));
+    return row;
+  }
+  const syncAddLink = () => { $("#add-link").disabled = $("#link-rows").children.length >= 5; };
+  function fillTeacherSelect(sel, value) {
+    sel.replaceChildren(el("option", { value: "", text: "이름을 골라 주세요" }),
+      ...groups().map(g => el("optgroup", { label: g.subject }, g.teachers.map(t => el("option", { value: t.name, text: t.name, selected: t.name === value })))));
+    sel.value = value && teacherOf(value) ? value : "";
+  }
+  function syncSubject() {
+    const t = teacherOf($("#f-teacher").value);
+    const box = $("#f-subject");
+    box.textContent = t ? t.subject : "명단에서 선생님을 고르면 자동으로 채워져요";
+    box.style.color = t ? "var(--ink)" : "";
+  }
+
+  function openForm(p) {
+    if (!S.loaded) { toast("명단을 불러오는 중이에요. 잠시 뒤 다시 눌러 주세요."); return; }
+    S.editingId = p ? p.id : null;
+    S.pending = []; S.removeIds = new Set(); S.editFiles = p ? p.files.slice() : [];
+    $("#form-title").textContent = p ? "수업자료 고치기" : "수업자료 올리기";
+    $("#save-btn").textContent = p ? "저장하기" : "올리기";
+    const defT = p ? p.teacher : (S.sel.kind === "teacher" ? S.sel.value : store.get("star-teacher"));
+    fillTeacherSelect($("#f-teacher"), defT); syncSubject();
+    $("#f-title").value = p ? p.title : "";
+    $("#f-grade").value = p ? p.grade : "";
+    $("#f-type").value = p ? p.type : TYPES[0];
+    $("#f-tools").value = p ? p.tools.join(", ") : "";
+    $("#f-desc").value = p ? p.desc : "";
+    $("#link-rows").replaceChildren(...(p && p.links.length ? p.links.map(linkRow) : [linkRow()]));
+    syncAddLink();
+    const r = $("#sw-" + (p ? p.color : "c1")); if (r) r.checked = true;
+    $("#f-code").value = S.code || ""; $("#code-field").hidden = !!S.code;
+    $("#form-err").textContent = ""; $("#save-status").textContent = "";
+    $("#save-btn").disabled = false;
+    renderFiles();
+    openOv("ov-form", $("#f-teacher").value ? "#f-title" : "#f-teacher");
+  }
+
+  let saving = false;
+  async function savePost(e) {
+    e.preventDefault();
+    if (saving) return;
+    const err = $("#form-err"); err.textContent = "";
+    const teacher = $("#f-teacher").value, title = $("#f-title").value.trim();
+    if (!teacherOf(teacher)) { err.textContent = "선생님 이름을 골라 주세요."; $("#f-teacher").focus(); return; }
+    if (!title) { err.textContent = "자료 제목을 적어 주세요."; $("#f-title").focus(); return; }
+    const links = [];
+    for (const row of $("#link-rows").children) {
+      const url = row.querySelector(".l-url").value.trim(), label = row.querySelector(".l-label").value.trim();
+      if (!url && !label) continue;
+      const ok = safeUrl(url);
+      if (!ok) { err.textContent = "링크 주소는 https:// 로 시작하는 전체 주소로 넣어 주세요."; row.querySelector(".l-url").focus(); return; }
+      links.push({ label: label.slice(0, 40), url: ok });
+    }
+    if (S.pending.some(i => i.status === "working")) { err.textContent = "파일 압축이 끝날 때까지 잠시만 기다려 주세요."; return; }
+    if (S.pending.some(i => i.status === "error")) { err.textContent = "올릴 수 없는 파일이 있어요. 빨간 글씨 파일을 빼고 다시 눌러 주세요."; return; }
+    if (totalBytes() > LIMIT.total) { err.textContent = "파일 합계가 25MB를 넘어요. 일부 파일을 빼거나 드라이브 링크로 공유해 주세요."; return; }
+    let code = S.code;
+    if (!code) {
+      code = $("#f-code").value.trim();
+      if (!code) { err.textContent = "교사단 코드를 입력해 주세요."; $("#f-code").focus(); return; }
+    }
+    saving = true;
+    const btn = $("#save-btn"); btn.disabled = true;
+    const status = $("#save-status");
+    try {
+      if (!S.code) {
+        status.textContent = "코드 확인 중…";
+        const v = await apiCall({ action: "verify", code });
+        if (!v.valid) throw new Error("교사단 코드가 맞지 않아요. 다시 확인해 주세요.");
+        rememberCode(code, $("#f-remember").checked);
+      }
+      status.textContent = S.pending.length ? "파일 준비 중…" : "저장 중…";
+      const files = [];
+      for (const it of S.pending) files.push({ name: it.name.slice(0, 120), mime: it.mime || finalBlob(it).type, data: await toB64(finalBlob(it)) });
+      const post = {
+        teacher, title, grade: $("#f-grade").value.trim(), type: $("#f-type").value,
+        tools: $("#f-tools").value.split(/[,，]/).map(s => s.trim().replace(/^#/, "")).filter(Boolean).slice(0, 10),
+        desc: $("#f-desc").value.trim(), links,
+        color: (document.querySelector('input[name="color"]:checked') || {}).value || "c1",
+      };
+      status.textContent = files.length ? "올리는 중… 사진이 많으면 30초 정도 걸려요." : "저장 중…";
+      const body = S.editingId ? { action: "update", code, id: S.editingId, post, files, removeFileIds: [...S.removeIds] } : { action: "create", code, post, files };
+      const r = await apiCall(body);
+      store.set("star-teacher", teacher);
+      const np = normPost(r.post);
+      if (S.editingId) S.posts = S.posts.map(x => x.id === np.id ? np : x); else S.posts.unshift(np);
+      const wasEdit = !!S.editingId;
+      if (!wasEdit) { S.sel = { kind: "all" }; S.subject = "전체"; S.q = ""; $("#q").value = ""; }
+      closeOv("ov-form");
+      renderAll();
+      toast(wasEdit ? "자료를 고쳤어요." : "자료를 올렸어요. 함께 나눠 주셔서 고마워요!");
+    } catch (ex) {
+      forgetCodeIfWrong(ex);
+      if (!S.code) $("#code-field").hidden = false;
+      err.textContent = ex.message || "저장하지 못했어요.";
+      status.textContent = "";
+    } finally {
+      saving = false; btn.disabled = false;
+    }
+  }
+
+  /* ---------- 캐릭터 만들기 ---------- */
+  const PRESETS = [
+    { name: "기본", base: true, a: {} },
+    { name: "예시 1", a: { face: "oval", skin: 1, hair: "side", hairColor: 0, eyes: "sparkle", glasses: "round", outfit: "labcoat", outfitColor: 2, bg: 2 } },
+    { name: "예시 2", a: { face: "soft", skin: 2, hair: "short", hairColor: 1, brows: "thick", mouth: "grin", glasses: "horn", outfit: "blazer", outfitColor: 5, bg: 0 } },
+    { name: "예시 3", a: { face: "oval", skin: 0, hair: "waveLong", hairColor: 2, eyes: "smile", hat: "flower", hatColor: 3, outfit: "cardi", outfitColor: 3, bg: 3 } },
+    { name: "예시 4", a: { face: "round", skin: 3, hair: "buzz", eyes: "wink", brows: "up", mouth: "grin", hat: "cap", hatColor: 0, outfit: "track", outfitColor: 1, bg: 1 } },
+    { name: "예시 5", a: { face: "wide", skin: 4, hair: "curly", eyes: "sparkle", mouth: "o", outfit: "hoodie", outfitColor: 4, bg: 4 } },
+    { name: "예시 6", a: { face: "oval", skin: 1, hair: "bob", fringe: "straight", eyes: "lashes", mouth: "calm", hat: "pin", hatColor: 6, outfit: "shirt", outfitColor: 7, bg: 5 } },
+    { name: "예시 7", a: { face: "soft", skin: 2, hair: "side", hairColor: 7, brows: "thick", glasses: "square", facial: "beard", outfit: "cardi", outfitColor: 5, bg: 6, blush: false } },
+    { name: "예시 8", a: { face: "round", skin: 0, hair: "bun", hairColor: 2, eyes: "smile", mouth: "grin", outfit: "apron", outfitColor: 6, bg: 1 } },
+    { name: "예시 9", a: { face: "oval", skin: 1, hair: "pony", hairColor: 4, eyes: "sparkle", mouth: "tongue", outfit: "tee", outfitColor: 8, bg: 7, freckles: true } },
+    { name: "예시 10", a: { skin: 2, hair: "waveShort", hairColor: 3, mouth: "smirk", glasses: "sun", outfit: "tee", outfitColor: 9, bg: 8 } },
+    { name: "예시 11", a: { face: "wide", skin: 1, hair: "pigtails", fringe: "seethrough", hairColor: 1, eyes: "sparkle", mouth: "grin", outfit: "tee", outfitColor: 3, bg: 4 } },
+    { name: "예시 12", a: { skin: 1, hair: "waveBob", fringe: "straight", hairColor: 1, eyes: "sparkle", outfit: "cardi", outfitColor: 7, bg: 2 } },
+    { name: "예시 13", a: { face: "oval", skin: 2, hair: "long", fringe: "side", hairColor: 6, eyes: "lashes", mouth: "calm", outfit: "shirt", outfitColor: 8, bg: 3 } },
+    { name: "예시 14", a: { face: "soft", skin: 3, hair: "quiff", hairColor: 1, brows: "thick", facial: "mustache", outfit: "shirt", outfitColor: 0, bg: 0 } },
+  ];
+
+  function openMaker(name) {
+    if (!S.loaded) { toast("명단을 불러오는 중이에요. 잠시 뒤 다시 눌러 주세요."); return; }
+    const who = name || (S.sel.kind === "teacher" ? S.sel.value : store.get("star-teacher"));
+    fillTeacherSelect($("#mk-teacher"), who);
+    loadMakerFor($("#mk-teacher").value);
+    $("#mk-code").value = S.code || ""; $("#mk-code-field").hidden = !!S.code;
+    $("#mk-err").textContent = "";
+    openOv("ov-avatar", $("#mk-teacher").value ? "#mk-save" : "#mk-teacher");
+  }
+  function loadMakerFor(name) {
+    const t = teacherOf(name);
+    S.mk.cur = StarAvatar.normalize(t && t.avatar ? t.avatar : { badge: t && Object.keys(StarAvatar.OPTIONS.badge).includes(t.subject) ? t.subject : "none" });
+    S.mk.picked = t && t.avatar ? -1 : 0;
+    drawPresets(); drawMaker();
+  }
+  function drawPresets() {
+    const box = $("#mk-presets"); box.replaceChildren();
+    PRESETS.forEach((pr, i) => box.append(el("button", {
+      type: "button", class: "preset" + (pr.base ? " base" : ""), title: pr.name + "에서 시작", "aria-label": pr.name + "에서 시작", "aria-pressed": String(S.mk.picked === i),
+      html: StarAvatar.svg(pr.a, { badge: false }),
+      onclick: () => { const badge = S.mk.cur.badge; S.mk.picked = i; S.mk.cur = StarAvatar.normalize(Object.assign({}, pr.a, { badge })); drawPresets(); drawMaker(); },
+    })));
+  }
+  function drawMaker() {
+    const cur = S.mk.cur;
+    $("#mk-big").innerHTML = StarAvatar.svg(cur, { title: "내 캐릭터" });
+    const box = $("#mk-opts"); box.replaceChildren();
+    const group = (label, fill) => { const c = el("div", { class: "choices" }); fill(c); box.append(el("div", { class: "opt" }, el("span", { text: label }), c)); };
+    const set = (k, v) => { cur[k] = v; S.mk.picked = -1; drawPresets(); drawMaker(); };
+    const chips = (key, label) => group(label, c => { for (const [v, t] of Object.entries(StarAvatar.OPTIONS[key])) c.append(el("button", { type: "button", class: "chip", "aria-pressed": String(cur[key] === v), onclick: () => set(key, v) }, t)); });
+    const toggle = (key, label) => group(label, c => [[true, "있음"], [false, "없음"]].forEach(([v, t]) => c.append(el("button", { type: "button", class: "chip", "aria-pressed": String(cur[key] === v), onclick: () => set(key, v) }, t))));
+    const swatches = (key, label, colors) => group(label, c => colors.forEach((col, i) => c.append(el("button", { type: "button", class: "sw", style: `background:${col}`, "aria-label": `${label} ${i + 1}`, "aria-pressed": String(cur[key] === i), onclick: () => set(key, i) }))));
+    chips("face", "얼굴형");
+    swatches("skin", "피부색", StarAvatar.SKIN);
+    chips("hair", "헤어스타일");
+    chips("fringe", "앞머리");
+    swatches("hairColor", "머리색", StarAvatar.HAIR_COLORS);
+    chips("eyes", "눈");
+    chips("brows", "눈썹");
+    chips("mouth", "입");
+    chips("glasses", "안경");
+    chips("facial", "수염");
+    chips("hat", "모자 · 핀");
+    if (cur.hat !== "none") swatches("hatColor", "모자 · 핀 색", StarAvatar.OUTFIT_COLORS);
+    toggle("blush", "볼터치");
+    toggle("freckles", "주근깨");
+    chips("outfit", "옷");
+    swatches("outfitColor", "옷 색", StarAvatar.OUTFIT_COLORS);
+    swatches("bg", "배경색", StarAvatar.BG_COLORS);
+    chips("badge", "교과 배지");
+  }
+  let savingAv = false;
+  async function saveAvatar() {
+    if (savingAv) return;
+    const err = $("#mk-err"); err.textContent = "";
+    const name = $("#mk-teacher").value;
+    if (!teacherOf(name)) { err.textContent = "명단에서 내 이름을 골라 주세요."; $("#mk-teacher").focus(); return; }
+    let code = S.code;
+    if (!code) { code = $("#mk-code").value.trim(); if (!code) { err.textContent = "교사단 코드를 입력해 주세요."; $("#mk-code").focus(); return; } }
+    savingAv = true; const btn = $("#mk-save"); btn.disabled = true; btn.textContent = "저장 중…";
+    try {
+      if (!S.code) {
+        const v = await apiCall({ action: "verify", code });
+        if (!v.valid) throw new Error("교사단 코드가 맞지 않아요. 다시 확인해 주세요.");
+        rememberCode(code, true);
+      }
+      const avatar = StarAvatar.normalize(S.mk.cur);
+      await apiCall({ action: "saveAvatar", code, name, avatar });
+      const t = teacherOf(name); if (t) t.avatar = avatar;
+      store.set("star-teacher", name);
+      closeOv("ov-avatar");
+      if ($("#cover").hidden) S.sel = { kind: "teacher", value: name };
+      renderAll();
+      toast("캐릭터를 저장했어요. 교사단 지도에서 확인해 보세요!");
+    } catch (e) { forgetCodeIfWrong(e); if (!S.code) $("#mk-code-field").hidden = false; err.textContent = e.message; }
+    savingAv = false; btn.disabled = false; btn.textContent = "저장하기";
+  }
+
+  /* ---------- 연결 ---------- */
+  function wire() {
+    $("#type-filter").append(el("option", { value: "전체", text: "모든 유형" }), ...TYPES.map(t => el("option", { value: t, text: t })));
+    $("#f-type").append(...TYPES.map(t => el("option", { value: t, text: t })));
+    $("#grade-list").append(...GRADES.map(g => el("option", { value: g })));
+    const sw = $("#swatches");
+    COLORS.forEach((c, i) => sw.append(el("input", { type: "radio", name: "color", id: "sw-" + c, value: c, checked: i === 0 }),
+      el("label", { for: "sw-" + c, title: COLOR_NAMES[c], style: `background: var(--${c})`, "aria-label": COLOR_NAMES[c] })));
+
+    $("#q").addEventListener("input", (e) => { S.q = e.target.value; renderAllTab(); });
+    $("#type-filter").addEventListener("change", (e) => { S.type = e.target.value; renderAllTab(); });
+    $("#sort").addEventListener("change", (e) => { S.sort = e.target.value; renderAllTab(); });
+    const setView = (v) => { S.view = v; $("#v-wall").setAttribute("aria-pressed", String(v === "wall")); $("#v-shelf").setAttribute("aria-pressed", String(v === "shelf")); store.set("star-view", v); renderAllTab(); };
+    $("#v-wall").addEventListener("click", () => setView("wall"));
+    $("#v-shelf").addEventListener("click", () => setView("shelf"));
+    if (store.get("star-view") === "shelf") setView("shelf");
+
+    // 표지
+    $("#enter").addEventListener("click", () => enter({ kind: "all" }));
+    $("#cover-avatar").addEventListener("click", () => openMaker(null));
+    const coverAct = (target) => { const n = target.closest && target.closest(".cv-node"); if (n) enter({ kind: "teacher", value: n.getAttribute("data-value") }); };
+    $("#constellation").addEventListener("click", (e) => coverAct(e.target));
+    $("#constellation").addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.closest && e.target.closest(".cv-node")) { e.preventDefault(); coverAct(e.target); } });
+    let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => sky.resize(), 200); });
+    $("#brand-logo").addEventListener("click", showCover);
+    $("#btn-add").addEventListener("click", () => openForm(null));
+    $("#btn-avatar").addEventListener("click", () => openMaker(null));
+    $("#f-teacher").addEventListener("change", syncSubject);
+    $("#add-link").addEventListener("click", () => { if ($("#link-rows").children.length < 5) $("#link-rows").append(linkRow()); syncAddLink(); });
+    $("#post-form").addEventListener("submit", savePost);
+    const drop = $("#drop"), fin = $("#f-file");
+    drop.addEventListener("click", () => fin.click());
+    drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fin.click(); } });
+    fin.addEventListener("change", () => { addFiles([...fin.files]); fin.value = ""; });
+    ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+    ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+    drop.addEventListener("drop", (e) => addFiles([...(e.dataTransfer && e.dataTransfer.files || [])]));
+
+    $("#d-like").addEventListener("click", toggleLike);
+    $("#d-copy").addEventListener("click", async () => {
+      const url = location.origin + location.pathname + "#" + S.openId;
+      try { await navigator.clipboard.writeText(url); toast("자료 링크를 복사했어요."); } catch { toast(url); }
+    });
+    $("#cmt-form").addEventListener("submit", addComment);
+    $("#c-name").value = store.get("star-cmt-name");
+
+    $("#mk-teacher").addEventListener("change", (e) => loadMakerFor(e.target.value));
+    $("#mk-rand").addEventListener("click", () => { const b = S.mk.cur.badge; S.mk.cur = StarAvatar.random(); S.mk.cur.badge = b; S.mk.picked = -1; drawPresets(); drawMaker(); });
+    $("#mk-reset").addEventListener("click", () => { const b = S.mk.cur.badge; S.mk.cur = StarAvatar.normalize({ badge: b }); S.mk.picked = 0; drawPresets(); drawMaker(); });
+    $("#mk-save").addEventListener("click", saveAvatar);
+
+    $("#code-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const code = $("#code-input").value.trim();
+      if (!code) { $("#code-err").textContent = "코드를 입력해 주세요."; return; }
+      try {
+        const v = await apiCall({ action: "verify", code });
+        if (!v.valid) { $("#code-err").textContent = "교사단 코드가 맞지 않아요."; return; }
+        rememberCode(code, $("#code-remember").checked);
+        const r = codeResolver; codeResolver = null; $("#ov-code").hidden = true; r && r(code);
+      } catch (err) { $("#code-err").textContent = err.message; }
+    });
+
+    document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => closeOv(b.getAttribute("data-close"))));
+    document.querySelectorAll(".overlay").forEach(ov => ov.addEventListener("mousedown", (e) => { if (e.target === ov && ov.id !== "ov-form" && ov.id !== "ov-avatar") closeOv(ov.id); }));
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const open = ["ov-code", "ov-form", "ov-avatar", "ov-detail"].find(id => !$("#" + id).hidden);
+      if (open) closeOv(open);
+    });
+  }
+
+  async function init() {
+    wire();
+    const h = (location.hash || "").slice(1);
+    if (h) enter({ kind: "all" }); else showCover();
+    await load(true);
+    if (h && S.posts.some(p => p.id === h)) openDetail(h);
+    setInterval(() => {
+      const busy = !$("#ov-form").hidden || !$("#ov-avatar").hidden;
+      if (document.visibilityState === "visible" && !busy) load(false);
+    }, Math.max(15, +CONFIG.POLL_SECONDS || 30) * 1000);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") load(false); });
+  }
+  init();
+})();
+
+</script>
+</body>
+</html>
